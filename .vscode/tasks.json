@@ -1,0 +1,18 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Push and Run on Pi",
+      "type": "shell",
+      "options": {
+        "shell": {
+          "executable": "C:\\Program Files\\Git\\bin\\bash.exe",
+          "args": ["-c"]
+        }
+      },
+      "command": "git add . && git commit -m 'Deploy via VS Code Task' -a && git push pi main && ssh lds00@100.117.254.20 'cd ~/ColorSensorTest && git pull && python3 color_logger_once.py'",
+      "group": "build",
+      "problemMatcher": []
+    }
+  ]
+}
