@@ -1,0 +1,148 @@
+2025-05-25T21:45:41.192557 [INFO] Script started.
+2025-05-25T21:45:41.205178 [INFO] Wi-Fi OK, IP: 127.0.1.1
+2025-05-25T21:45:41.205507 [INFO] Initializing I2C sensor...
+2025-05-25T21:45:42.446129 [INFO] I2C devices found: [41]
+2025-05-25T21:45:42.564616 [INFO] Sensor initialized at address 0x29
+2025-05-25T21:45:42.565016 [INFO] Reading color sensor...
+2025-05-25T21:45:43.822962 [INFO] Sensor values: R=4, G=17, B=14, Lux=1556.2220528455287
+2025-05-25T21:45:43.824631 [INFO] 2025-05-25T21:45:43.823180  R:4  G:17  B:14  Lux:1556.22  Wetness:0.0%
+2025-05-25T21:45:43.825072 [INFO] Sending payload: {"timestamp": "2025-05-25T21:45:43.823180", "moisture": 14, "wetness_percent": 0.0, "lux": 1556.2220528455287, "sensor_id": "pi_zero_1"}
+2025-05-25T21:45:44.086364 [INFO] POST status: 200, response: {"status":"ok"}
+
+2025-05-25T21:45:49.087254 [INFO] Reading color sensor...
+2025-05-25T21:45:50.347652 [INFO] Sensor values: R=4, G=17, B=14, Lux=1557.1167682926832
+2025-05-25T21:45:50.348586 [INFO] 2025-05-25T21:45:50.348200  R:4  G:17  B:14  Lux:1557.12  Wetness:0.0%
+2025-05-25T21:45:50.348883 [INFO] Sending payload: {"timestamp": "2025-05-25T21:45:50.348200", "moisture": 14, "wetness_percent": 0.0, "lux": 1557.1167682926832, "sensor_id": "pi_zero_1"}
+2025-05-25T21:45:50.565435 [INFO] POST status: 200, response: {"status":"ok"}
+
+2025-05-25T21:45:55.567271 [INFO] Reading color sensor...
+2025-05-25T21:45:57.202767 [INFO] Sensor values: R=4, G=17, B=14, Lux=1556.2220528455287
+2025-05-25T21:45:57.203516 [INFO] 2025-05-25T21:45:57.202995  R:4  G:17  B:14  Lux:1556.22  Wetness:0.0%
+2025-05-25T21:45:57.204045 [INFO] Sending payload: {"timestamp": "2025-05-25T21:45:57.202995", "moisture": 14, "wetness_percent": 0.0, "lux": 1556.2220528455287, "sensor_id": "pi_zero_1"}
+2025-05-25T21:45:57.464689 [INFO] POST status: 200, response: {"status":"ok"}
+
+2025-05-25T21:46:02.762578 [INFO] GPIO cleaned up. Script finished.
+2025-05-25T21:50:14.906257 [INFO] Script started.
+2025-05-25T21:50:14.917224 [INFO] Wi-Fi OK, IP: 127.0.1.1
+2025-05-25T21:50:14.918055 [INFO] Initializing I2C sensor...
+2025-05-25T21:50:16.297690 [INFO] I2C devices found: [41]
+2025-05-25T21:50:16.420080 [INFO] Sensor initialized at address 0x29
+2025-05-25T21:50:16.420430 [INFO] Reading color sensor...
+2025-05-25T21:50:17.820258 [INFO] Sensor values: R=4, G=18, B=14, Lux=1728.631199186992
+2025-05-25T21:50:17.835213 [INFO] 2025-05-25T21:50:17.820456  R:4  G:18  B:14  Lux:1728.63  Wetness:0.0%
+2025-05-25T21:50:17.835675 [INFO] Sending payload: {"timestamp": "2025-05-25T21:50:17.820456", "moisture": 14, "wetness_percent": 0.0, "lux": 1728.631199186992, "sensor_id": "pi_zero_1"}
+2025-05-25T21:50:27.878834 [INFO] Reading color sensor...
+2025-05-25T21:50:29.195435 [INFO] Sensor values: R=4, G=18, B=14, Lux=1728.9808943089429
+2025-05-25T21:50:29.197227 [INFO] 2025-05-25T21:50:29.195681  R:4  G:18  B:14  Lux:1728.98  Wetness:0.0%
+2025-05-25T21:50:29.197789 [INFO] Sending payload: {"timestamp": "2025-05-25T21:50:29.195681", "moisture": 14, "wetness_percent": 0.0, "lux": 1728.9808943089429, "sensor_id": "pi_zero_1"}
+2025-05-25T21:50:34.382085 [INFO] Reading color sensor...
+2025-05-25T21:50:35.850617 [INFO] Sensor values: R=4, G=18, B=14, Lux=1728.4358739837396
+2025-05-25T21:50:35.852142 [INFO] 2025-05-25T21:50:35.850815  R:4  G:18  B:14  Lux:1728.44  Wetness:0.0%
+2025-05-25T21:50:35.852559 [INFO] Sending payload: {"timestamp": "2025-05-25T21:50:35.850815", "moisture": 14, "wetness_percent": 0.0, "lux": 1728.4358739837396, "sensor_id": "pi_zero_1"}
+2025-05-26T12:38:12.995327 [INFO] GPIO cleaned up. Script finished.
+2025-05-26T12:39:46.376695 [INFO] Script started.
+2025-05-26T12:39:46.385376 [INFO] Wi-Fi OK, IP: 127.0.1.1
+2025-05-26T12:39:46.385751 [INFO] Initializing I2C sensor...
+2025-05-26T12:39:47.635910 [INFO] I2C devices found: [41]
+2025-05-26T12:39:47.752405 [INFO] Sensor initialized at address 0x29
+2025-05-26T12:39:47.752765 [INFO] Reading color sensor...
+2025-05-26T12:39:49.029812 [INFO] Sensor values: R=4, G=18, B=14, Lux=1728.8265243902438
+2025-05-26T12:39:49.038903 [INFO] 2025-05-26T12:39:49.030014  R:4  G:18  B:14  Lux:1728.83  Wetness:0.0%
+2025-05-26T12:39:49.039508 [INFO] Sending payload: {"timestamp": "2025-05-26T12:39:49.030014", "moisture": 14, "wetness_percent": 0.0, "lux": 1728.8265243902438, "sensor_id": "pi_zero_1"}
+2025-05-26T12:39:54.516296 [INFO] Reading color sensor...
+2025-05-26T12:39:55.781346 [INFO] Sensor values: R=4, G=18, B=14, Lux=1729.0691056910568
+2025-05-26T12:39:55.781927 [INFO] 2025-05-26T12:39:55.781537  R:4  G:18  B:14  Lux:1729.07  Wetness:0.0%
+2025-05-26T12:39:55.782259 [INFO] Sending payload: {"timestamp": "2025-05-26T12:39:55.781537", "moisture": 14, "wetness_percent": 0.0, "lux": 1729.0691056910568, "sensor_id": "pi_zero_1"}
+2025-05-26T12:40:00.938895 [INFO] Reading color sensor...
+2025-05-26T12:40:02.196441 [INFO] Sensor values: R=4, G=18, B=14, Lux=1729.7212398373986
+2025-05-26T12:40:02.197147 [INFO] 2025-05-26T12:40:02.196628  R:4  G:18  B:14  Lux:1729.72  Wetness:0.0%
+2025-05-26T12:40:02.197668 [INFO] Sending payload: {"timestamp": "2025-05-26T12:40:02.196628", "moisture": 14, "wetness_percent": 0.0, "lux": 1729.7212398373986, "sensor_id": "pi_zero_1"}
+2025-05-26T12:40:07.443605 [INFO] GPIO cleaned up. Script finished.
+2025-05-26T14:00:39.301971 [INFO] Script started.
+2025-05-26T14:00:39.312645 [INFO] Wi-Fi OK, IP: 127.0.1.1
+2025-05-26T14:00:39.312987 [INFO] Initializing I2C sensor...
+2025-05-26T14:00:40.521305 [INFO] I2C devices found: [41]
+2025-05-26T14:00:40.636297 [INFO] Sensor initialized at address 0x29
+2025-05-26T14:00:40.636631 [INFO] Reading color sensor...
+2025-05-26T14:00:41.927895 [INFO] Sensor values: R=4, G=18, B=14, Lux=1730.5907520325209
+2025-05-26T14:00:41.938349 [INFO] 2025-05-26T14:00:41.928103  R:4  G:18  B:14  Lux:1730.59  Wetness:0.0%
+2025-05-26T14:00:41.938862 [INFO] Sending payload: {"timestamp": "2025-05-26T14:00:41.928103", "moisture": 14, "wetness_percent": 0.0, "lux": 1730.5907520325209, "sensor_id": "pi_zero_1"}
+2025-05-26T14:00:48.451360 [INFO] Reading color sensor...
+2025-05-26T14:00:49.830403 [INFO] Sensor values: R=4, G=18, B=14, Lux=1731.8351626016265
+2025-05-26T14:00:49.831210 [INFO] 2025-05-26T14:00:49.830638  R:4  G:18  B:14  Lux:1731.84  Wetness:0.0%
+2025-05-26T14:00:49.831741 [INFO] Sending payload: {"timestamp": "2025-05-26T14:00:49.830638", "moisture": 14, "wetness_percent": 0.0, "lux": 1731.8351626016265, "sensor_id": "pi_zero_1"}
+2025-05-26T14:00:54.958117 [INFO] Reading color sensor...
+2025-05-26T14:00:56.241610 [INFO] Sensor values: R=4, G=18, B=14, Lux=1730.8333333333337
+2025-05-26T14:00:56.242432 [INFO] 2025-05-26T14:00:56.241846  R:4  G:18  B:14  Lux:1730.83  Wetness:0.0%
+2025-05-26T14:00:56.243018 [INFO] Sending payload: {"timestamp": "2025-05-26T14:00:56.241846", "moisture": 14, "wetness_percent": 0.0, "lux": 1730.8333333333337, "sensor_id": "pi_zero_1"}
+2025-05-26T14:01:01.496959 [INFO] GPIO cleaned up. Script finished.
+2025-05-26T14:39:12.835069 [INFO] Script started.
+2025-05-26T14:39:12.847516 [INFO] Wi-Fi OK, IP: 127.0.1.1
+2025-05-26T14:39:12.847905 [INFO] Initializing I2C sensor...
+2025-05-26T14:39:14.110474 [INFO] I2C devices found: [41]
+2025-05-26T14:39:14.236289 [INFO] Sensor initialized at address 0x29
+2025-05-26T14:39:14.236693 [INFO] Reading color sensor...
+2025-05-26T14:39:15.505070 [INFO] Sensor values: R=4, G=18, B=14, Lux=1730.6978658536586
+2025-05-26T14:39:15.506909 [INFO] 2025-05-26T14:39:15.505325  R:4  G:18  B:14  Lux:1730.70  Wetness:0.0%
+2025-05-26T14:39:15.507512 [INFO] Sending payload: {"timestamp": "2025-05-26T14:39:15.505325", "moisture": 14, "wetness_percent": 0.0, "lux": 1730.6978658536586, "sensor_id": "pi_zero_1"}
+2025-05-26T14:39:17.032568 [INFO] POST status: 200, response: {"status":"ok"}
+
+2025-05-26T14:39:22.033899 [INFO] Reading color sensor...
+2025-05-26T14:39:23.262862 [INFO] Sensor values: R=4, G=18, B=14, Lux=1731.7280487804878
+2025-05-26T14:39:23.263774 [INFO] 2025-05-26T14:39:23.263373  R:4  G:18  B:14  Lux:1731.73  Wetness:0.0%
+2025-05-26T14:39:23.264073 [INFO] Sending payload: {"timestamp": "2025-05-26T14:39:23.263373", "moisture": 14, "wetness_percent": 0.0, "lux": 1731.7280487804878, "sensor_id": "pi_zero_1"}
+2025-05-26T14:39:23.517824 [INFO] POST status: 200, response: {"status":"ok"}
+
+2025-05-26T14:39:28.518469 [INFO] Reading color sensor...
+2025-05-26T14:39:29.751460 [INFO] Sensor values: R=4, G=18, B=14, Lux=1730.9404471544717
+2025-05-26T14:39:29.752052 [INFO] 2025-05-26T14:39:29.751660  R:4  G:18  B:14  Lux:1730.94  Wetness:0.0%
+2025-05-26T14:39:29.752364 [INFO] Sending payload: {"timestamp": "2025-05-26T14:39:29.751660", "moisture": 14, "wetness_percent": 0.0, "lux": 1730.9404471544717, "sensor_id": "pi_zero_1"}
+2025-05-26T14:39:29.989661 [INFO] POST status: 200, response: {"status":"ok"}
+
+2025-05-26T14:39:35.091446 [INFO] GPIO cleaned up. Script finished.
+2025-05-26T14:41:31.884645 [INFO] Script started.
+2025-05-26T14:41:31.897630 [INFO] Wi-Fi OK, IP: 127.0.1.1
+2025-05-26T14:41:31.898001 [INFO] Initializing I2C sensor...
+2025-05-26T14:41:33.057969 [INFO] I2C devices found: [41]
+2025-05-26T14:41:33.168317 [INFO] Sensor initialized at address 0x29
+2025-05-26T14:41:33.168645 [INFO] Reading color sensor...
+2025-05-26T14:41:34.430762 [INFO] Sensor values: R=2, G=18, B=18, Lux=1127.6974593495936
+2025-05-26T14:41:34.433847 [INFO] 2025-05-26T14:41:34.431389  R:2  G:18  B:18  Lux:1127.70  Wetness:57.1%
+2025-05-26T14:41:34.434473 [INFO] Sending payload: {"timestamp": "2025-05-26T14:41:34.431389", "moisture": 18, "wetness_percent": 0.5714285714285714, "lux": 1127.6974593495936, "sensor_id": "pi_zero_1"}
+2025-05-26T14:41:34.748896 [INFO] POST status: 200, response: {"status":"ok"}
+
+2025-05-26T14:41:39.749737 [INFO] Reading color sensor...
+2025-05-26T14:41:41.010433 [INFO] Sensor values: R=2, G=18, B=18, Lux=1128.0471544715447
+2025-05-26T14:41:41.011120 [INFO] 2025-05-26T14:41:41.010651  R:2  G:18  B:18  Lux:1128.05  Wetness:57.1%
+2025-05-26T14:41:41.011464 [INFO] Sending payload: {"timestamp": "2025-05-26T14:41:41.010651", "moisture": 18, "wetness_percent": 0.5714285714285714, "lux": 1128.0471544715447, "sensor_id": "pi_zero_1"}
+2025-05-26T14:41:41.222377 [INFO] POST status: 200, response: {"status":"ok"}
+
+2025-05-26T14:41:46.223554 [INFO] Reading color sensor...
+2025-05-26T14:41:47.574259 [INFO] Sensor values: R=2, G=18, B=18, Lux=1128.154268292683
+2025-05-26T14:41:47.575318 [INFO] 2025-05-26T14:41:47.574845  R:2  G:18  B:18  Lux:1128.15  Wetness:57.1%
+2025-05-26T14:41:47.575639 [INFO] Sending payload: {"timestamp": "2025-05-26T14:41:47.574845", "moisture": 18, "wetness_percent": 0.5714285714285714, "lux": 1128.154268292683, "sensor_id": "pi_zero_1"}
+2025-05-26T14:41:47.823259 [INFO] POST status: 200, response: {"status":"ok"}
+
+2025-05-26T14:41:52.925919 [INFO] GPIO cleaned up. Script finished.
+2025-05-26T14:55:21.152390 [INFO] Script started.
+2025-05-26T14:55:21.170033 [INFO] Wi-Fi OK, IP: 127.0.1.1
+2025-05-26T14:55:21.170366 [INFO] Initializing I2C sensor...
+2025-05-26T14:55:22.415984 [INFO] I2C devices found: [41]
+2025-05-26T14:55:22.541297 [INFO] Sensor initialized at address 0x29
+2025-05-26T14:55:22.541595 [INFO] Reading color sensor...
+2025-05-26T14:55:23.909109 [INFO] Sensor values: R=3, G=18, B=15, Lux=1361.7915650406505
+2025-05-26T14:55:23.913000 [INFO] 2025-05-26T14:55:23.909455  R:3  G:18  B:15  Lux:1361.79  Wetness:14.3%
+2025-05-26T14:55:23.913847 [INFO] Sending payload: {"timestamp": "2025-05-26T14:55:23.909455", "moisture": 15, "wetness_percent": 0.14285714285714285, "lux": 1361.7915650406505, "sensor_id": "pi_zero_1"}
+2025-05-26T14:55:33.946374 [INFO] Reading color sensor...
+2025-05-26T14:55:35.309861 [INFO] Sensor values: R=3, G=18, B=15, Lux=1361.460772357724
+2025-05-26T14:55:35.315027 [INFO] 2025-05-26T14:55:35.310079  R:3  G:18  B:15  Lux:1361.46  Wetness:14.3%
+2025-05-26T14:55:35.315592 [INFO] Sending payload: {"timestamp": "2025-05-26T14:55:35.310079", "moisture": 15, "wetness_percent": 0.14285714285714285, "lux": 1361.460772357724, "sensor_id": "pi_zero_1"}
+2025-05-26T14:55:35.607934 [INFO] POST status: 200, response: {"status":"ok"}
+
+2025-05-26T14:55:40.608985 [INFO] Reading color sensor...
+2025-05-26T14:55:41.853504 [INFO] Sensor values: R=3, G=18, B=15, Lux=1360.6731707317076
+2025-05-26T14:55:41.854494 [INFO] 2025-05-26T14:55:41.853911  R:3  G:18  B:15  Lux:1360.67  Wetness:14.3%
+2025-05-26T14:55:41.857476 [INFO] Sending payload: {"timestamp": "2025-05-26T14:55:41.853911", "moisture": 15, "wetness_percent": 0.14285714285714285, "lux": 1360.6731707317076, "sensor_id": "pi_zero_1"}
+2025-05-26T14:55:42.243779 [INFO] POST status: 200, response: {"status":"ok"}
+
+2025-05-26T14:56:42.494181 [INFO] GPIO cleaned up. Script finished.
