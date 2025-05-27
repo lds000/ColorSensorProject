@@ -156,6 +156,7 @@ try:
         with open(LOG_FILE, "a") as f:
             f.write(line + "\n")
         log_stdout(line)
+        print(line)  # <-- Add this line to output to console
 
         send_to_receiver(post_data)
         time.sleep(READ_INTERVAL)
