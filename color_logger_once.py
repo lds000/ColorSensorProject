@@ -6,7 +6,6 @@ import time
 from datetime import datetime
 import socket
 import subprocess
-import traceback
 import requests
 import json
 import os
@@ -38,6 +37,37 @@ def check_wifi():
     log_stdout(status)
     if "FAIL" in status:
         log_error("Wi-Fi not connected")
+
+# Function to get IP address
+def get_ip_address():
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception as e:
+        return f"Could not get IP: {e}"
+
+# Function to get WiFi status and info
+def get_wifi_info():
+    try:
+        result = subprocess.run(['iwgetid'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        if result.stdout:
+            ssid = result.stdout.strip()
+        else:
+            ssid = "Not connected to WiFi"
+        # Get more info (optional)
+        status = subprocess.run(['iwconfig'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        return f"SSID: {ssid}\nWiFi Info:\n{status.stdout}"
+    except Exception as e:
+        return f"Could not get WiFi info: {e}"
+
+# Print network info on startup
+print("--- Pi Network Info ---")
+print(f"IP Address: {get_ip_address()}")
+print(get_wifi_info())
+print("-----------------------\n")
 
 # ---------- INIT SENSOR ----------
 def init_sensor():
