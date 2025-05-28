@@ -252,20 +252,21 @@ def should_abort_shutdown():
 # ---------- PISUGAR STATUS FETCHER ----------
 def get_pisugar_status():
     try:
-        PISUGAR_USER = "lds00"
-        PISUGAR_PASS = "Celica1!"
-        response = requests.get(
-            "http://localhost:8421/api/status",
-            timeout=2,
-            auth=HTTPDigestAuth(PISUGAR_USER, PISUGAR_PASS)
-        )
-        if response.status_code == 200:
-            return response.json()
-        else:
-            log_error(f"PiSugar status HTTP {response.status_code}: {response.text}")
-            return {"error": f"HTTP {response.status_code}"}
+        from pisugar import PiSugarServer
+        ps = PiSugarServer()
+        status = {
+            "battery": ps.get_battery(),
+            "voltage": ps.get_battery_v(),
+            "charging": ps.get_battery_charging(),
+            "model": ps.get_model(),
+            "power_plugged": getattr(ps, 'get_battery_power_plugged', lambda: None)(),
+            "allow_charging": getattr(ps, 'get_battery_allow_charging', lambda: None)(),
+            "output_enabled": getattr(ps, 'get_battery_output_enabled', lambda: None)(),
+            "temperature": getattr(ps, 'get_temperature', lambda: None)(),
+        }
+        return status
     except Exception as e:
-        log_error(f"Failed to fetch PiSugar status: {e}")
+        log_error(f"Failed to fetch PiSugar status (pisugar lib): {e}")
         return {"error": str(e)}
 
 # ---------- VERSION ----------
