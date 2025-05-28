@@ -282,7 +282,11 @@ try:
         log_stdout(line)
         print(line)  # <-- Add this line to output to console
 
-        send_to_receiver(post_data)
+        try:
+            send_to_receiver(post_data)
+        except Exception as e:
+            log_error(f"Send to receiver failed for reading {i+1}: {e}")
+            log_stdout(f"Send to receiver failed for reading {i+1}: {e}")
         time.sleep(READ_INTERVAL)
 
 except Exception as e:
