@@ -1,7 +1,9 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 import os
 import json
 from datetime import datetime
+import subprocess
+import threading
 
 app = Flask(__name__)
 
@@ -46,6 +48,22 @@ def health():
         'uptime': uptime,
         'time': datetime.now().isoformat()
     })
+
+@app.route('/ota-update', methods=['POST'])
+def ota_update():
+    # Optional: require a secret token for security
+    token = request.headers.get('X-OTA-Token')
+    required_token = os.environ.get('OTA_TOKEN')
+    if required_token and token != required_token:
+        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 401
+
+    def do_update():
+        subprocess.call(['git', 'pull'])
+        # Optionally restart main script or reboot here
+        # subprocess.call(['systemctl', 'restart', 'color_logger'])
+        # subprocess.call(['reboot'])
+    threading.Thread(target=do_update).start()
+    return jsonify({'status': 'ok', 'message': 'OTA update triggered'})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)
