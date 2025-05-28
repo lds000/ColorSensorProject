@@ -9,15 +9,48 @@ import subprocess
 import requests
 import json
 import os
+import argparse
 
 # ---------- CONFIG ----------
-LED_PIN = 17
-LOG_FILE = "color_log.txt"
-ERROR_LOG = "error_log.txt"
-STDOUT_LOG = "stdout_log.txt"
-NUM_READINGS = 3
-READ_INTERVAL = 5  # seconds between readings
-RECEIVER_URL = "http://100.116.147.6:5000/soil-data"  # Tailscale IP of receiver
+def load_config():
+    # Default values
+    config = {
+        "LED_PIN": 17,
+        "LOG_FILE": "color_log.txt",
+        "ERROR_LOG": "error_log.txt",
+        "STDOUT_LOG": "stdout_log.txt",
+        "NUM_READINGS": 3,
+        "READ_INTERVAL": 5,
+        "RECEIVER_URL": "http://100.116.147.6:5000/soil-data"
+    }
+    # Load from config.json if exists
+    if os.path.exists("config.json"):
+        with open("config.json", "r") as f:
+            file_config = json.load(f)
+            config.update(file_config)
+    return config
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--num-readings', type=int, help='Number of readings to take')
+parser.add_argument('--read-interval', type=int, help='Seconds between readings')
+parser.add_argument('--receiver-url', type=str, help='Receiver URL for POST')
+args = parser.parse_args()
+
+CONFIG = load_config()
+if args.num_readings is not None:
+    CONFIG["NUM_READINGS"] = args.num_readings
+if args.read_interval is not None:
+    CONFIG["READ_INTERVAL"] = args.read_interval
+if args.receiver_url is not None:
+    CONFIG["RECEIVER_URL"] = args.receiver_url
+
+LED_PIN = CONFIG["LED_PIN"]
+LOG_FILE = CONFIG["LOG_FILE"]
+ERROR_LOG = CONFIG["ERROR_LOG"]
+STDOUT_LOG = CONFIG["STDOUT_LOG"]
+NUM_READINGS = CONFIG["NUM_READINGS"]
+READ_INTERVAL = CONFIG["READ_INTERVAL"]
+RECEIVER_URL = CONFIG["RECEIVER_URL"]
 
 def log_stdout(msg):
     with open(STDOUT_LOG, "a") as f:
@@ -125,6 +158,17 @@ def read_color(sensor):
         "lux": float(lux)
     }
 
+# ---------- ABORT SHUTDOWN CHECK ----------
+def should_abort_shutdown():
+    try:
+        response = requests.get("http://100.116.147.6:5000/abort-shutdown", timeout=2)
+        if response.text.strip().lower() == "abort":
+            print("Shutdown aborted by parent Pi.")
+            return True
+    except Exception as e:
+        print(f"Could not contact parent Pi: {e}")
+    return False
+
 # ---------- MAIN ----------
 try:
     GPIO.setmode(GPIO.BCM)
@@ -170,4 +214,6 @@ finally:
     GPIO.output(LED_PIN, GPIO.LOW)  # 🔧 Ensure LED is OFF no matter what
     GPIO.cleanup()
     log_stdout("GPIO cleaned up. Script finished.")
-    # subprocess.run(["sudo", "shutdown", "now"])  # Uncomment for battery mode
+    # Uncomment for battery mode: Only shutdown if parent Pi does not send abort
+    # if not should_abort_shutdown():
+    #     subprocess.run(["sudo", "shutdown", "now"])
