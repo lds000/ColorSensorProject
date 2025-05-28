@@ -260,7 +260,7 @@ def get_pisugar_status():
         return {"error": str(e)}
 
 # ---------- VERSION ----------
-SCRIPT_VERSION = 1
+SCRIPT_VERSION = 2  # Bumped version for deployment test
 
 # ---------- MAIN ----------
 try:
@@ -276,7 +276,7 @@ try:
     resend_queued_payloads()
 
     for i in range(NUM_READINGS):
-        print(f"color_logger_once.py version: {SCRIPT_VERSION}")
+        print(f"color_logger_once.py version: {SCRIPT_VERSION} (deployed {datetime.now().isoformat()})")
         data = read_color(sensor)
         wetness = calculate_wetness_percent(data['b'])
         percent_str = f"{wetness * 100:.1f}%"
