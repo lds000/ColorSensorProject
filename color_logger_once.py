@@ -152,13 +152,49 @@ def calculate_wetness_percent(b):
     b_wet_max = 21
     return max(0.0, min((b - b_dry_min) / (b_wet_max - b_dry_min), 1.0))
 
+UNSENT_QUEUE_FILE = "unsent_queue.jsonl"
+
+# ---------- QUEUE UNSENT PAYLOAD ----------
+def queue_unsent_payload(payload):
+    try:
+        with open(UNSENT_QUEUE_FILE, "a") as f:
+            f.write(json.dumps(payload) + "\n")
+        log_error("Payload queued for resend later.")
+    except Exception as e:
+        log_error(f"Failed to queue payload: {e}")
+
+# ---------- RESEND QUEUED PAYLOADS ----------
+def resend_queued_payloads():
+    if not os.path.exists(UNSENT_QUEUE_FILE):
+        return
+    lines_to_keep = []
+    with open(UNSENT_QUEUE_FILE, "r") as f:
+        lines = f.readlines()
+    for line in lines:
+        try:
+            payload = json.loads(line)
+            send_to_receiver(payload)
+        except Exception as e:
+            lines_to_keep.append(line)
+            log_error(f"Failed to resend queued payload: {e}")
+    if lines_to_keep:
+        with open(UNSENT_QUEUE_FILE, "w") as f:
+            f.writelines(lines_to_keep)
+    else:
+        os.remove(UNSENT_QUEUE_FILE)
+
 # ---------- HTTP POST SENDER (with retry) ----------
+# Update send_to_receiver to queue on failure
 @retry(max_attempts=4, initial_delay=2, backoff=2, jitter=1, error_msg="POST to receiver failed after retries")
 def send_to_receiver(payload):
     log_stdout(f"Sending payload: {json.dumps(payload)}")
-    response = requests.post(RECEIVER_URL, json=payload, timeout=5)
-    log_stdout(f"POST status: {response.status_code}, response: {response.text}")
-    response.raise_for_status()
+    try:
+        response = requests.post(RECEIVER_URL, json=payload, timeout=5)
+        log_stdout(f"POST status: {response.status_code}, response: {response.text}")
+        response.raise_for_status()
+    except Exception as e:
+        queue_unsent_payload(payload)
+        raise
 
 # ---------- SENSOR READER ----------
 def read_color(sensor):
@@ -197,6 +233,9 @@ try:
     log_stdout("Script started.")
     check_wifi()
     sensor = init_sensor()
+
+    # Resend any queued payloads at the start
+    resend_queued_payloads()
 
     for i in range(NUM_READINGS):
         data = read_color(sensor)
