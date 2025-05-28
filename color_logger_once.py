@@ -298,6 +298,8 @@ try:
         )
 
         pisugar_status = get_pisugar_status()
+        print(f"PiSugar status: {pisugar_status}")
+        log_stdout(f"PiSugar status: {pisugar_status}")
 
         post_data = {
             "timestamp": data["timestamp"],
