@@ -15,6 +15,8 @@ import logging
 from logging.handlers import RotatingFileHandler
 import traceback
 
+print("=== SCRIPT STARTED: color_logger_once.py ===")
+
 # ---------- CONFIG ----------
 def load_config():
     # Default values
@@ -276,7 +278,9 @@ try:
     resend_queued_payloads()
 
     for i in range(NUM_READINGS):
+        print("--- DEBUG: Entering main loop ---")
         print(f"color_logger_once.py version: {SCRIPT_VERSION} (deployed {datetime.now().isoformat()})")
+        print("--- DEBUG: After version print ---")
         data = read_color(sensor)
         wetness = calculate_wetness_percent(data['b'])
         percent_str = f"{wetness * 100:.1f}%"
