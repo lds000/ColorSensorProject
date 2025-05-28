@@ -14,6 +14,7 @@ import random
 import logging
 from logging.handlers import RotatingFileHandler
 import traceback
+from requests.auth import HTTPDigestAuth
 
 print("=== SCRIPT STARTED: color_logger_once.py ===")
 
@@ -251,7 +252,13 @@ def should_abort_shutdown():
 # ---------- PISUGAR STATUS FETCHER ----------
 def get_pisugar_status():
     try:
-        response = requests.get("http://localhost:8421/api/status", timeout=2)
+        PISUGAR_USER = "lds00"
+        PISUGAR_PASS = "Celica1!"
+        response = requests.get(
+            "http://localhost:8421/api/status",
+            timeout=2,
+            auth=HTTPDigestAuth(PISUGAR_USER, PISUGAR_PASS)
+        )
         if response.status_code == 200:
             return response.json()
         else:
