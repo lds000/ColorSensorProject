@@ -10,6 +10,7 @@ import requests
 import json
 import os
 import argparse
+import random
 
 # ---------- CONFIG ----------
 def load_config():
@@ -102,7 +103,28 @@ print(f"IP Address: {get_ip_address()}")
 print(get_wifi_info())
 print("-----------------------\n")
 
-# ---------- INIT SENSOR ----------
+# ---------- RETRY DECORATOR ----------
+def retry(max_attempts=3, initial_delay=1, backoff=2, jitter=0.5, error_msg=None):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            delay = initial_delay
+            for attempt in range(1, max_attempts + 1):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    if attempt == max_attempts:
+                        if error_msg:
+                            log_error(f"{error_msg}: {e}")
+                        raise
+                    sleep_time = delay + random.uniform(0, jitter)
+                    log_stdout(f"Retry {attempt}/{max_attempts} failed: {e}. Retrying in {sleep_time:.1f}s...")
+                    time.sleep(sleep_time)
+                    delay *= backoff
+        return wrapper
+    return decorator
+
+# ---------- INIT SENSOR (with retry) ----------
+@retry(max_attempts=5, initial_delay=2, backoff=2, jitter=1, error_msg="Sensor initialization failed after retries")
 def init_sensor():
     log_stdout("Initializing I2C sensor...")
     i2c = I2C(scl=D22, sda=D27)
@@ -130,16 +152,13 @@ def calculate_wetness_percent(b):
     b_wet_max = 21
     return max(0.0, min((b - b_dry_min) / (b_wet_max - b_dry_min), 1.0))
 
-# ---------- HTTP POST SENDER ----------
+# ---------- HTTP POST SENDER (with retry) ----------
+@retry(max_attempts=4, initial_delay=2, backoff=2, jitter=1, error_msg="POST to receiver failed after retries")
 def send_to_receiver(payload):
     log_stdout(f"Sending payload: {json.dumps(payload)}")
-    try:
-        response = requests.post(RECEIVER_URL, json=payload, timeout=5)
-        log_stdout(f"POST status: {response.status_code}, response: {response.text}")
-        response.raise_for_status()
-    except Exception as e:
-        log_error(f"[POST ERROR] {str(e)}")
-        log_error(f"Failed payload: {json.dumps(payload)}")
+    response = requests.post(RECEIVER_URL, json=payload, timeout=5)
+    log_stdout(f"POST status: {response.status_code}, response: {response.text}")
+    response.raise_for_status()
 
 # ---------- SENSOR READER ----------
 def read_color(sensor):
