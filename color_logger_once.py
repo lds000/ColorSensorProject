@@ -13,6 +13,7 @@ import argparse
 import random
 import logging
 from logging.handlers import RotatingFileHandler
+import traceback
 
 # ---------- CONFIG ----------
 def load_config():
