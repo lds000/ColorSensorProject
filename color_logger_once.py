@@ -11,6 +11,8 @@ import json
 import os
 import argparse
 import random
+import logging
+from logging.handlers import RotatingFileHandler
 
 # ---------- CONFIG ----------
 def load_config():
@@ -53,11 +55,30 @@ NUM_READINGS = CONFIG["NUM_READINGS"]
 READ_INTERVAL = CONFIG["READ_INTERVAL"]
 RECEIVER_URL = CONFIG["RECEIVER_URL"]
 
+# ---------- LOGGING ENHANCEMENTS ----------
+LOG_MAX_BYTES = 1024 * 1024  # 1MB per log file
+LOG_BACKUP_COUNT = 3         # Keep up to 3 old log files
+
+# Set up rotating file handlers for logs
+for log_file in [LOG_FILE, ERROR_LOG, STDOUT_LOG]:
+    handler = RotatingFileHandler(log_file, maxBytes=LOG_MAX_BYTES, backupCount=LOG_BACKUP_COUNT)
+    logger = logging.getLogger(log_file)
+    logger.setLevel(logging.INFO)
+    logger.addHandler(handler)
+
+# Update log_stdout and log_error to use logging levels
+
 def log_stdout(msg):
+    logger = logging.getLogger(STDOUT_LOG)
+    logger.info(msg)
+    # Also write to file for compatibility
     with open(STDOUT_LOG, "a") as f:
         f.write(f"{datetime.now().isoformat()} [INFO] {msg}\n")
 
 def log_error(msg):
+    logger = logging.getLogger(ERROR_LOG)
+    logger.error(msg)
+    # Also write to file for compatibility
     with open(ERROR_LOG, "a") as f:
         f.write(f"{datetime.now().isoformat()} [ERROR] {msg}\n")
 
