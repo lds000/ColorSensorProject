@@ -246,6 +246,22 @@ def should_abort_shutdown():
         print(f"Could not contact parent Pi: {e}")
     return False
 
+# ---------- PISUGAR STATUS FETCHER ----------
+def get_pisugar_status():
+    try:
+        response = requests.get("http://localhost:8421/api/status", timeout=2)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            log_error(f"PiSugar status HTTP {response.status_code}: {response.text}")
+            return {"error": f"HTTP {response.status_code}"}
+    except Exception as e:
+        log_error(f"Failed to fetch PiSugar status: {e}")
+        return {"error": str(e)}
+
+# ---------- VERSION ----------
+SCRIPT_VERSION = 1
+
 # ---------- MAIN ----------
 try:
     GPIO.setmode(GPIO.BCM)
@@ -260,6 +276,7 @@ try:
     resend_queued_payloads()
 
     for i in range(NUM_READINGS):
+        print(f"color_logger_once.py version: {SCRIPT_VERSION}")
         data = read_color(sensor)
         wetness = calculate_wetness_percent(data['b'])
         percent_str = f"{wetness * 100:.1f}%"
@@ -269,12 +286,15 @@ try:
             f"B:{data['b']}  Lux:{data['lux']:.2f}  Wetness:{percent_str}"
         )
 
+        pisugar_status = get_pisugar_status()
+
         post_data = {
             "timestamp": data["timestamp"],
             "moisture": data["b"],
             "wetness_percent": wetness,
             "lux": data["lux"],
-            "sensor_id": "pi_zero_1"
+            "sensor_id": "pi_zero_1",
+            "pisugar_status": pisugar_status
         }
 
         with open(LOG_FILE, "a") as f:
