@@ -270,7 +270,7 @@ def get_pisugar_status():
         return {"error": str(e)}
 
 # ---------- VERSION ----------
-SCRIPT_VERSION = 2  # Bumped version for deployment test
+SCRIPT_VERSION = 3  # Bumped version for deployment test
 
 # ---------- MAIN ----------
 try:
