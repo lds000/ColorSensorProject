@@ -348,7 +348,10 @@ except Exception as e:
     log_stdout(f"Exception occurred: {str(e)}\n{stack}")
 
 finally:
-    GPIO.output(LED_PIN, GPIO.LOW)  # 🔧 Ensure LED is OFF no matter what
+    try:
+        GPIO.output(LED_PIN, GPIO.LOW)  # 🔧 Ensure LED is OFF no matter what
+    except Exception as e:
+        log_error(f"Failed to set LED_PIN LOW in finally: {e}")
     GPIO.cleanup()
     log_stdout("GPIO cleaned up. Script finished.")
     # Uncomment for battery mode: Only shutdown if parent Pi does not send abort
