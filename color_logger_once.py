@@ -253,7 +253,7 @@ def should_abort_shutdown():
 def get_pisugar_status():
     try:
         from pisugar import PiSugarServer
-        ps = PiSugarServer()
+        ps = PiSugarServer(socket_path="/tmp/pisugar-server.sock")
         status = {
             "battery": ps.get_battery(),
             "voltage": ps.get_battery_v(),
@@ -274,54 +274,73 @@ SCRIPT_VERSION = 2  # Bumped version for deployment test
 
 # ---------- MAIN ----------
 try:
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setup(LED_PIN, GPIO.OUT)
-    GPIO.output(LED_PIN, GPIO.LOW)  # Ensure LED is OFF at start
+    while True:
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setup(LED_PIN, GPIO.OUT)
+        GPIO.output(LED_PIN, GPIO.LOW)  # Ensure LED is OFF at start
 
-    log_stdout("Script started.")
-    check_wifi()
-    sensor = init_sensor()
+        log_stdout("Script started.")
+        check_wifi()
+        sensor = init_sensor()
 
-    # Resend any queued payloads at the start
-    resend_queued_payloads()
+        # Resend any queued payloads at the start
+        resend_queued_payloads()
 
-    for i in range(NUM_READINGS):
-        print("--- DEBUG: Entering main loop ---")
-        print(f"color_logger_once.py version: {SCRIPT_VERSION} (deployed {datetime.now().isoformat()})")
-        print("--- DEBUG: After version print ---")
-        data = read_color(sensor)
-        wetness = calculate_wetness_percent(data['b'])
-        percent_str = f"{wetness * 100:.1f}%"
+        for i in range(NUM_READINGS):
+            print("--- DEBUG: Entering main loop ---")
+            print(f"color_logger_once.py version: {SCRIPT_VERSION} (deployed {datetime.now().isoformat()})")
+            print("--- DEBUG: After version print ---")
+            data = read_color(sensor)
+            wetness = calculate_wetness_percent(data['b'])
+            percent_str = f"{wetness * 100:.1f}%"
 
-        line = (
-            f"{data['timestamp']}  R:{data['r']}  G:{data['g']}  "
-            f"B:{data['b']}  Lux:{data['lux']:.2f}  Wetness:{percent_str}"
-        )
+            line = (
+                f"{data['timestamp']}  R:{data['r']}  G:{data['g']}  "
+                f"B:{data['b']}  Lux:{data['lux']:.2f}  Wetness:{percent_str}"
+            )
 
-        pisugar_status = get_pisugar_status()
-        print(f"PiSugar status: {pisugar_status}")
-        log_stdout(f"PiSugar status: {pisugar_status}")
+            pisugar_status = get_pisugar_status()
+            print(f"PiSugar status: {pisugar_status}")
+            log_stdout(f"PiSugar status: {pisugar_status}")
 
-        post_data = {
-            "timestamp": data["timestamp"],
-            "moisture": data["b"],
-            "wetness_percent": wetness,
-            "lux": data["lux"],
-            "sensor_id": "pi_zero_1",
-            "pisugar_status": pisugar_status
-        }
+            post_data = {
+                "timestamp": data["timestamp"],
+                "moisture": data["b"],
+                "wetness_percent": wetness,
+                "lux": data["lux"],
+                "sensor_id": "pi_zero_1",
+                "pisugar_status": pisugar_status
+            }
 
-        with open(LOG_FILE, "a") as f:
-            f.write(line + "\n")
-        log_stdout(line)
-        print(line)  # <-- Add this line to output to console
+            with open(LOG_FILE, "a") as f:
+                f.write(line + "\n")
+            log_stdout(line)
+            print(line)  # <-- Add this line to output to console
 
+            try:
+                send_to_receiver(post_data)
+            except Exception as e:
+                log_error(f"Send to receiver failed for reading {i+1}: {e}")
+                log_stdout(f"Send to receiver failed for reading {i+1}: {e}")
+            time.sleep(READ_INTERVAL)
+
+        # After measurements, stay awake for 2 minutes to allow abort
+        print("Staying awake for 2 minutes before sleep. Press Ctrl+C to abort.")
+        log_stdout("Staying awake for 2 minutes before sleep. Press Ctrl+C to abort.")
+        time.sleep(120)
+
+        # Sleep for 5 minutes using PiSugar API
         try:
-            send_to_receiver(post_data)
+            from pisugar import PiSugarServer
+            ps = PiSugarServer(socket_path="/tmp/pisugar-server.sock")
+            print("Triggering PiSugar sleep for 5 minutes (300 seconds)...")
+            log_stdout("Triggering PiSugar sleep for 5 minutes (300 seconds)...")
+            ps.sleep(300)
         except Exception as e:
-            log_error(f"Send to receiver failed for reading {i+1}: {e}")
-            log_stdout(f"Send to receiver failed for reading {i+1}: {e}")
-        time.sleep(READ_INTERVAL)
+            log_error(f"Failed to trigger PiSugar sleep: {e}")
+            print(f"Failed to trigger PiSugar sleep: {e}")
+            # If sleep fails, wait 5 minutes as fallback
+            time.sleep(300)
 
 except Exception as e:
     stack = traceback.format_exc()
