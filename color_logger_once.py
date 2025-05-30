@@ -249,25 +249,45 @@ def should_abort_shutdown():
         print(f"Could not contact parent Pi: {e}")
     return False
 
-# ---------- PISUGAR STATUS FETCHER ----------
+# ---------- PISUGAR STATUS FETCHER (via netcat) ----------
 def get_pisugar_status():
+    import subprocess
     try:
-        from pisugar import PiSugarServer
-        ps = PiSugarServer(socket_path="/tmp/pisugar-server.sock")
-        status = {
-            "battery": ps.get_battery(),
-            "voltage": ps.get_battery_v(),
-            "charging": ps.get_battery_charging(),
-            "model": ps.get_model(),
-            "power_plugged": getattr(ps, 'get_battery_power_plugged', lambda: None)(),
-            "allow_charging": getattr(ps, 'get_battery_allow_charging', lambda: None)(),
-            "output_enabled": getattr(ps, 'get_battery_output_enabled', lambda: None)(),
-            "temperature": getattr(ps, 'get_temperature', lambda: None)(),
-        }
+        result = subprocess.run(
+            ["nc", "-q", "0", "127.0.0.1", "8423"],
+            input="get battery\nget voltage\nget charging\nget model\n",
+            text=True,
+            capture_output=True,
+            timeout=2
+        )
+        status = {}
+        for line in result.stdout.splitlines():
+            if ':' in line:
+                k, v = line.split(':', 1)
+                status[k.strip()] = v.strip()
         return status
     except Exception as e:
-        log_error(f"Failed to fetch PiSugar status (pisugar lib): {e}")
+        log_error(f"Failed to fetch PiSugar status (nc): {e}")
         return {"error": str(e)}
+
+# ---------- PISUGAR SLEEP (via netcat) ----------
+def pisugar_sleep(seconds):
+    import subprocess
+    try:
+        cmd = f"sleep {seconds}\n"
+        subprocess.run(
+            ["nc", "-q", "0", "127.0.0.1", "8423"],
+            input=cmd,
+            text=True,
+            timeout=2
+        )
+        log_stdout(f"Triggered PiSugar sleep for {seconds} seconds via nc.")
+        print(f"Triggered PiSugar sleep for {seconds} seconds via nc.")
+    except Exception as e:
+        log_error(f"Failed to trigger PiSugar sleep via nc: {e}")
+        print(f"Failed to trigger PiSugar sleep via nc: {e}")
+        # If sleep fails, wait as fallback
+        time.sleep(seconds)
 
 # ---------- VERSION ----------
 SCRIPT_VERSION = 3  # Bumped version for deployment test
@@ -329,13 +349,9 @@ try:
         log_stdout("Staying awake for 2 minutes before sleep. Press Ctrl+C to abort.")
         time.sleep(120)
 
-        # Sleep for 5 minutes using PiSugar API
+        # Sleep for 5 minutes using PiSugar API (now via netcat)
         try:
-            from pisugar import PiSugarServer
-            ps = PiSugarServer(socket_path="/tmp/pisugar-server.sock")
-            print("Triggering PiSugar sleep for 5 minutes (300 seconds)...")
-            log_stdout("Triggering PiSugar sleep for 5 minutes (300 seconds)...")
-            ps.sleep(300)
+            pisugar_sleep(300)
         except Exception as e:
             log_error(f"Failed to trigger PiSugar sleep: {e}")
             print(f"Failed to trigger PiSugar sleep: {e}")
