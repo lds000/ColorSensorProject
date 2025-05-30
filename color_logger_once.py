@@ -315,6 +315,7 @@ SCRIPT_VERSION = 3  # Bumped version for deployment test
 class HealthHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/health':
+            pisugar_status = PiSugar().get_status()
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
@@ -322,7 +323,8 @@ class HealthHandler(BaseHTTPRequestHandler):
                 'status': 'ok',
                 'script': 'color_logger_once.py',
                 'version': SCRIPT_VERSION,
-                'timestamp': datetime.now().isoformat()
+                'timestamp': datetime.now().isoformat(),
+                'pisugar_status': pisugar_status
             }
             self.wfile.write(json.dumps(response).encode())
         else:
