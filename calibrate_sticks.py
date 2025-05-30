@@ -2,8 +2,8 @@ import time
 import json
 from datetime import datetime
 import os
+from busio import I2C  # Use busio instead of adafruit_bitbangio
 
-from adafruit_bitbangio import I2C
 from board import D22, D27
 import adafruit_tcs34725
 import RPi.GPIO as GPIO
