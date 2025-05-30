@@ -1,5 +1,4 @@
 {
-    // VS Code task to kill any process using port 8080 on the Pi
     "label": "Kill 8080 on Pi",
     "type": "shell",
     "command": "ssh lds00@100.117.254.20 'fuser -k 8080/tcp || sudo lsof -t -i:8080 | xargs -r kill'",
