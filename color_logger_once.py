@@ -341,7 +341,15 @@ def start_health_server(port=8080):
 
 # ---------- MAIN ----------
 try:
-    start_health_server(8080)
+    print("[DEBUG] Attempting to start health check server on port 8080...")
+    log_stdout("[DEBUG] Attempting to start health check server on port 8080...")
+    try:
+        start_health_server(8080)
+        print("[DEBUG] Health check server start call completed.")
+        log_stdout("[DEBUG] Health check server start call completed.")
+    except Exception as e:
+        print(f"[ERROR] Failed to start health check server: {e}")
+        log_error(f"[ERROR] Failed to start health check server: {e}")
     while True:
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(LED_PIN, GPIO.OUT)
