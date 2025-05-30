@@ -15,6 +15,8 @@ import logging
 from logging.handlers import RotatingFileHandler
 import traceback
 from requests.auth import HTTPDigestAuth
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 print("=== SCRIPT STARTED: color_logger_once.py ===")
 
@@ -73,21 +75,22 @@ for log_file in [LOG_FILE, ERROR_LOG, STDOUT_LOG]:
 # Update log_stdout and log_error to use logging levels
 
 def log_stdout(msg):
+    """Log a message to the STDOUT log file and logger."""
     logger = logging.getLogger(STDOUT_LOG)
     logger.info(msg)
-    # Also write to file for compatibility
     with open(STDOUT_LOG, "a") as f:
         f.write(f"{datetime.now().isoformat()} [INFO] {msg}\n")
 
 def log_error(msg):
+    """Log an error message to the ERROR log file and logger."""
     logger = logging.getLogger(ERROR_LOG)
     logger.error(msg)
-    # Also write to file for compatibility
     with open(ERROR_LOG, "a") as f:
         f.write(f"{datetime.now().isoformat()} [ERROR] {msg}\n")
 
 # ---------- WI-FI CHECK ----------
 def check_wifi():
+    """Check Wi-Fi connectivity and log the status."""
     try:
         ip = socket.gethostbyname(socket.gethostname())
         status = f"Wi-Fi OK, IP: {ip}"
@@ -99,6 +102,7 @@ def check_wifi():
 
 # Function to get IP address
 def get_ip_address():
+    """Get the current IP address of the Pi."""
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("8.8.8.8", 80))
@@ -110,6 +114,7 @@ def get_ip_address():
 
 # Function to get WiFi status and info
 def get_wifi_info():
+    """Get Wi-Fi SSID and additional info."""
     try:
         result = subprocess.run(['iwgetid'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         if result.stdout:
@@ -130,6 +135,7 @@ print("-----------------------\n")
 
 # ---------- RETRY DECORATOR ----------
 def retry(max_attempts=3, initial_delay=1, backoff=2, jitter=0.5, error_msg=None):
+    """Retry decorator for functions that may fail, with exponential backoff."""
     def decorator(func):
         def wrapper(*args, **kwargs):
             delay = initial_delay
@@ -151,6 +157,7 @@ def retry(max_attempts=3, initial_delay=1, backoff=2, jitter=0.5, error_msg=None
 # ---------- INIT SENSOR (with retry) ----------
 @retry(max_attempts=5, initial_delay=2, backoff=2, jitter=1, error_msg="Sensor initialization failed after retries")
 def init_sensor():
+    """Initialize the I2C color sensor with retries."""
     log_stdout("Initializing I2C sensor...")
     i2c = I2C(scl=D22, sda=D27)
     while not i2c.try_lock():
@@ -173,6 +180,7 @@ def init_sensor():
 
 # ---------- WETNESS CALCULATION ----------
 def calculate_wetness_percent(b):
+    """Calculate wetness percent from blue channel value."""
     b_dry_min = 14
     b_wet_max = 21
     return max(0.0, min((b - b_dry_min) / (b_wet_max - b_dry_min), 1.0))
@@ -181,6 +189,7 @@ UNSENT_QUEUE_FILE = "unsent_queue.jsonl"
 
 # ---------- QUEUE UNSENT PAYLOAD ----------
 def queue_unsent_payload(payload):
+    """Queue a payload for later resend if POST fails."""
     try:
         with open(UNSENT_QUEUE_FILE, "a") as f:
             f.write(json.dumps(payload) + "\n")
@@ -190,6 +199,7 @@ def queue_unsent_payload(payload):
 
 # ---------- RESEND QUEUED PAYLOADS ----------
 def resend_queued_payloads():
+    """Attempt to resend all queued payloads."""
     if not os.path.exists(UNSENT_QUEUE_FILE):
         return
     lines_to_keep = []
@@ -212,6 +222,7 @@ def resend_queued_payloads():
 # Update send_to_receiver to queue on failure
 @retry(max_attempts=4, initial_delay=2, backoff=2, jitter=1, error_msg="POST to receiver failed after retries")
 def send_to_receiver(payload):
+    """Send a payload to the receiver via HTTP POST, queue if fails."""
     log_stdout(f"Sending payload: {json.dumps(payload)}")
     try:
         response = requests.post(RECEIVER_URL, json=payload, timeout=5)
@@ -223,6 +234,7 @@ def send_to_receiver(payload):
 
 # ---------- SENSOR READER ----------
 def read_color(sensor):
+    """Read color sensor values and return as a dict."""
     log_stdout("Reading color sensor...")
     GPIO.output(LED_PIN, GPIO.HIGH)
     time.sleep(0.3)
@@ -240,6 +252,7 @@ def read_color(sensor):
 
 # ---------- ABORT SHUTDOWN CHECK ----------
 def should_abort_shutdown():
+    """Check with parent Pi if shutdown should be aborted."""
     try:
         response = requests.get("http://100.116.147.6:5000/abort-shutdown", timeout=2)
         if response.text.strip().lower() == "abort":
@@ -249,51 +262,86 @@ def should_abort_shutdown():
         print(f"Could not contact parent Pi: {e}")
     return False
 
-# ---------- PISUGAR STATUS FETCHER (via netcat) ----------
-def get_pisugar_status():
-    import subprocess
-    try:
-        result = subprocess.run(
-            ["nc", "-q", "0", "127.0.0.1", "8423"],
-            input="get battery\nget voltage\nget charging\nget model\n",
-            text=True,
-            capture_output=True,
-            timeout=2
-        )
-        status = {}
-        for line in result.stdout.splitlines():
-            if ':' in line:
-                k, v = line.split(':', 1)
-                status[k.strip()] = v.strip()
-        return status
-    except Exception as e:
-        log_error(f"Failed to fetch PiSugar status (nc): {e}")
-        return {"error": str(e)}
+# ---------- PISUGAR CLASS ----------
+class PiSugar:
+    """Class to interact with PiSugar hardware for status and sleep control."""
+    def __init__(self):
+        pass
 
-# ---------- PISUGAR SLEEP (via netcat) ----------
-def pisugar_sleep(seconds):
-    import subprocess
-    try:
-        cmd = f"sleep {seconds}\n"
-        subprocess.run(
-            ["nc", "-q", "0", "127.0.0.1", "8423"],
-            input=cmd,
-            text=True,
-            timeout=2
-        )
-        log_stdout(f"Triggered PiSugar sleep for {seconds} seconds via nc.")
-        print(f"Triggered PiSugar sleep for {seconds} seconds via nc.")
-    except Exception as e:
-        log_error(f"Failed to trigger PiSugar sleep via nc: {e}")
-        print(f"Failed to trigger PiSugar sleep via nc: {e}")
-        # If sleep fails, wait as fallback
-        time.sleep(seconds)
+    def get_status(self):
+        """Fetch PiSugar status (battery, voltage, charging, model) via netcat."""
+        import subprocess
+        try:
+            result = subprocess.run(
+                ["nc", "-q", "0", "127.0.0.1", "8423"],
+                input="get battery\nget voltage\nget charging\nget model\n",
+                text=True,
+                capture_output=True,
+                timeout=2
+            )
+            status = {"battery": "N/A", "voltage": "N/A", "charging": "N/A", "model": "N/A"}
+            for line in result.stdout.splitlines():
+                if ':' in line:
+                    k, v = line.split(':', 1)
+                    status[k.strip()] = v.strip()
+            return status
+        except Exception as e:
+            log_error(f"Failed to fetch PiSugar status (nc): {e}")
+            return {"error": str(e)}
+
+    def sleep(self, seconds):
+        """Trigger PiSugar sleep for a given number of seconds via netcat."""
+        import subprocess
+        try:
+            cmd = f"sleep {seconds}\n"
+            subprocess.run(
+                ["nc", "-q", "0", "127.0.0.1", "8423"],
+                input=cmd,
+                text=True,
+                timeout=2
+            )
+            log_stdout(f"Triggered PiSugar sleep for {seconds} seconds via nc.")
+            print(f"Triggered PiSugar sleep for {seconds} seconds via nc.")
+        except Exception as e:
+            log_error(f"Failed to trigger PiSugar sleep via nc: {e}")
+            print(f"Failed to trigger PiSugar sleep via nc: {e}")
+            # If sleep fails, wait as fallback
+            time.sleep(seconds)
 
 # ---------- VERSION ----------
 SCRIPT_VERSION = 3  # Bumped version for deployment test
 
+# ---------- HEALTH CHECK SERVER ----------
+class HealthHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path == '/health':
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            response = {
+                'status': 'ok',
+                'script': 'color_logger_once.py',
+                'version': SCRIPT_VERSION,
+                'timestamp': datetime.now().isoformat()
+            }
+            self.wfile.write(json.dumps(response).encode())
+        else:
+            self.send_response(404)
+            self.end_headers()
+
+
+def start_health_server(port=8080):
+    """Start a simple HTTP server for health checks in a background thread."""
+    def run_server():
+        server = HTTPServer(('0.0.0.0', port), HealthHandler)
+        server.serve_forever()
+    thread = threading.Thread(target=run_server, daemon=True)
+    thread.start()
+    log_stdout(f"Health check server started on port {port}")
+
 # ---------- MAIN ----------
 try:
+    start_health_server(8080)
     while True:
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(LED_PIN, GPIO.OUT)
@@ -302,9 +350,15 @@ try:
         log_stdout("Script started.")
         check_wifi()
         sensor = init_sensor()
+        pisugar = PiSugar()
 
         # Resend any queued payloads at the start
         resend_queued_payloads()
+
+        # Parameterize sensor_id
+        sensor_id = CONFIG.get("SENSOR_ID", "pi_zero_1")
+        if hasattr(args, 'sensor_id') and args.sensor_id:
+            sensor_id = args.sensor_id
 
         for i in range(NUM_READINGS):
             print("--- DEBUG: Entering main loop ---")
@@ -319,7 +373,7 @@ try:
                 f"B:{data['b']}  Lux:{data['lux']:.2f}  Wetness:{percent_str}"
             )
 
-            pisugar_status = get_pisugar_status()
+            pisugar_status = pisugar.get_status()
             print(f"PiSugar status: {pisugar_status}")
             log_stdout(f"PiSugar status: {pisugar_status}")
 
@@ -328,8 +382,9 @@ try:
                 "moisture": data["b"],
                 "wetness_percent": wetness,
                 "lux": data["lux"],
-                "sensor_id": "pi_zero_1",
-                "pisugar_status": pisugar_status
+                "sensor_id": sensor_id,
+                "pisugar_status": pisugar_status,
+                "script_version": SCRIPT_VERSION  # Add version to payload
             }
 
             with open(LOG_FILE, "a") as f:
@@ -351,7 +406,7 @@ try:
 
         # Sleep for 5 minutes using PiSugar API (now via netcat)
         try:
-            pisugar_sleep(300)
+            pisugar.sleep(300)
         except Exception as e:
             log_error(f"Failed to trigger PiSugar sleep: {e}")
             print(f"Failed to trigger PiSugar sleep: {e}")
