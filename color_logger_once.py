@@ -184,14 +184,20 @@ def calculate_wetness_percent(b, calibration=None):
     if calibration and 'white_stick' in calibration and 'blue_stick' in calibration:
         b_dry = calibration['white_stick']['b']
         b_wet = calibration['blue_stick']['b']
+        print(f"[DEBUG] Using calibration: b_dry={b_dry}, b_wet={b_wet}, b={b}")
         # Avoid division by zero
         if b_wet == b_dry:
             return 0.0
-        return max(0.0, min((b - b_dry) / (b_wet - b_dry), 1.0))
+        result = max(0.0, min((b - b_dry) / (b_wet - b_dry), 1.0))
+        print(f"[DEBUG] Wetness calculation: ({b} - {b_dry}) / ({b_wet} - {b_dry}) = {result}")
+        return result
     # Fallback to hardcoded values if no calibration
     b_dry_min = 14
     b_wet_max = 21
-    return max(0.0, min((b - b_dry_min) / (b_wet_max - b_dry_min), 1.0))
+    print(f"[DEBUG] Using fallback: b_dry_min={b_dry_min}, b_wet_max={b_wet_max}, b={b}")
+    result = max(0.0, min((b - b_dry_min) / (b_wet_max - b_dry_min), 1.0))
+    print(f"[DEBUG] Wetness calculation: ({b} - {b_dry_min}) / ({b_wet_max} - {b_dry_min}) = {result}")
+    return result
 
 UNSENT_QUEUE_FILE = "unsent_queue.jsonl"
 
