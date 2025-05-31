@@ -5,7 +5,7 @@ import os
 from busio import I2C  # Use busio instead of adafruit_bitbangio
 import argparse
 
-from board import D22, D27
+from board import SCL, SDA  # Use hardware I2C pins
 import adafruit_tcs34725
 import RPi.GPIO as GPIO
 
@@ -18,7 +18,7 @@ CALIBRATION_FILE = "calibration.json"
 
 def init_sensor():
     print("Initializing I2C sensor...")
-    i2c = I2C(scl=D22, sda=D27)
+    i2c = I2C(SCL, SDA)  # Use hardware I2C
     while not i2c.try_lock():
         time.sleep(0.1)
     devices = i2c.scan()
