@@ -3,6 +3,7 @@ import json
 from datetime import datetime
 import os
 from busio import I2C  # Use busio instead of adafruit_bitbangio
+import argparse
 
 from board import D22, D27
 import adafruit_tcs34725
@@ -41,6 +42,11 @@ def read_color(sensor):
     return {"r": int(r), "g": int(g), "b": int(b), "lux": float(lux)}
 
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--break-mode', action='store_true', help='Pause for user input after each reading')
+args = parser.parse_args()
+
+
 def average_readings(sensor, label):
     print(f"Take {NUM_READINGS} readings for {label}...")
     readings = []
@@ -48,6 +54,8 @@ def average_readings(sensor, label):
         data = read_color(sensor)
         readings.append(data)
         print(f"  Reading {i+1}: R={data['r']} G={data['g']} B={data['b']} Lux={data['lux']:.2f}")
+        if args.break_mode:
+            input("Press Enter to continue...")
         time.sleep(READ_INTERVAL)
     avg = {k: sum(d[k] for d in readings) / NUM_READINGS for k in readings[0]}
     print(f"  Average: R={avg['r']:.1f} G={avg['g']:.1f} B={avg['b']:.1f} Lux={avg['lux']:.2f}")
