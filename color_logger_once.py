@@ -179,8 +179,16 @@ def init_sensor():
     return sensor
 
 # ---------- WETNESS CALCULATION ----------
-def calculate_wetness_percent(b):
-    """Calculate wetness percent from blue channel value."""
+def calculate_wetness_percent(b, calibration=None):
+    """Calculate wetness percent from blue channel value, using calibration if available."""
+    if calibration and 'white_stick' in calibration and 'blue_stick' in calibration:
+        b_dry = calibration['white_stick']['b']
+        b_wet = calibration['blue_stick']['b']
+        # Avoid division by zero
+        if b_wet == b_dry:
+            return 0.0
+        return max(0.0, min((b - b_dry) / (b_wet - b_dry), 1.0))
+    # Fallback to hardcoded values if no calibration
     b_dry_min = 14
     b_wet_max = 21
     return max(0.0, min((b - b_dry_min) / (b_wet_max - b_dry_min), 1.0))
@@ -308,6 +316,14 @@ class PiSugar:
             # If sleep fails, wait as fallback
             time.sleep(seconds)
 
+# ---------- LOAD CALIBRATION ----------
+def load_calibration(calibration_file="calibration.json"):
+    """Load calibration values from calibration.json if present."""
+    if os.path.exists(calibration_file):
+        with open(calibration_file, "r") as f:
+            return json.load(f)
+    return None
+
 # ---------- VERSION ----------
 SCRIPT_VERSION = 3  # Bumped version for deployment test
 
@@ -352,6 +368,13 @@ try:
     except Exception as e:
         print(f"[ERROR] Failed to start health check server: {e}")
         log_error(f"[ERROR] Failed to start health check server: {e}")
+    calibration = load_calibration()
+    if calibration:
+        print(f"Loaded calibration: {calibration}")
+        log_stdout(f"Loaded calibration: {calibration}")
+    else:
+        print("No calibration file found. Running without calibration.")
+        log_stdout("No calibration file found. Running without calibration.")
     while True:
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(LED_PIN, GPIO.OUT)
@@ -375,8 +398,12 @@ try:
             print(f"color_logger_once.py version: {SCRIPT_VERSION} (deployed {datetime.now().isoformat()})")
             print("--- DEBUG: After version print ---")
             data = read_color(sensor)
-            wetness = calculate_wetness_percent(data['b'])
+            wetness = calculate_wetness_percent(data['b'], calibration)
             percent_str = f"{wetness * 100:.1f}%"
+
+            # Add calibration info to log and payload
+            if calibration:
+                data['calibration'] = calibration
 
             line = (
                 f"{data['timestamp']}  R:{data['r']}  G:{data['g']}  "
@@ -394,7 +421,8 @@ try:
                 "lux": data["lux"],
                 "sensor_id": sensor_id,
                 "pisugar_status": pisugar_status,
-                "script_version": SCRIPT_VERSION  # Add version to payload
+                "script_version": SCRIPT_VERSION,  # Add version to payload
+                "calibration": calibration if calibration else None
             }
 
             with open(LOG_FILE, "a") as f:
