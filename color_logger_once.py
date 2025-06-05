@@ -222,7 +222,9 @@ def resend_queued_payloads():
     for line in lines:
         try:
             payload = json.loads(line)
-            send_to_receiver(payload)
+            # Only send minimal fields
+            minimal_payload = {k: payload[k] for k in ("timestamp", "moisture") if k in payload}
+            send_to_receiver(minimal_payload)
         except Exception as e:
             lines_to_keep.append(line)
             log_error(f"Failed to resend queued payload: {e}")
@@ -237,7 +239,14 @@ def resend_queued_payloads():
 @retry(max_attempts=4, initial_delay=2, backoff=2, jitter=1, error_msg="POST to receiver failed after retries")
 def send_to_receiver(payload):
     """Send a payload to the receiver via HTTP POST, queue if fails."""
-    log_stdout(f"Sending payload: {json.dumps(payload)}")
+    # Enforce only allowed fields
+    allowed_keys = {"timestamp", "moisture"}
+    extra_keys = set(payload.keys()) - allowed_keys
+    if extra_keys:
+        log_error(f"[FATAL] Payload has extra keys: {extra_keys}. Payload: {json.dumps(payload)}")
+        # Optionally, strip extra keys before sending
+        payload = {k: payload[k] for k in allowed_keys if k in payload}
+    log_stdout(f"[DEBUG] Actually sending payload: {json.dumps(payload)}")
     try:
         response = requests.post(RECEIVER_URL, json=payload, timeout=5)
         log_stdout(f"POST status: {response.status_code}, response: {response.text}")
@@ -276,52 +285,6 @@ def should_abort_shutdown():
         print(f"Could not contact parent Pi: {e}")
     return False
 
-# ---------- PISUGAR CLASS ----------
-class PiSugar:
-    """Class to interact with PiSugar hardware for status and sleep control."""
-    def __init__(self):
-        pass
-
-    def get_status(self):
-        """Fetch PiSugar status (battery, voltage, charging, model) via netcat."""
-        import subprocess
-        try:
-            result = subprocess.run(
-                ["nc", "-q", "0", "127.0.0.1", "8423"],
-                input="get battery\nget voltage\nget charging\nget model\n",
-                text=True,
-                capture_output=True,
-                timeout=2
-            )
-            status = {"battery": "N/A", "voltage": "N/A", "charging": "N/A", "model": "N/A"}
-            for line in result.stdout.splitlines():
-                if ':' in line:
-                    k, v = line.split(':', 1)
-                    status[k.strip()] = v.strip()
-            return status
-        except Exception as e:
-            log_error(f"Failed to fetch PiSugar status (nc): {e}")
-            return {"error": str(e)}
-
-    def sleep(self, seconds):
-        """Trigger PiSugar sleep for a given number of seconds via netcat."""
-        import subprocess
-        try:
-            cmd = f"sleep {seconds}\n"
-            subprocess.run(
-                ["nc", "-q", "0", "127.0.0.1", "8423"],
-                input=cmd,
-                text=True,
-                timeout=2
-            )
-            log_stdout(f"Triggered PiSugar sleep for {seconds} seconds via nc.")
-            print(f"Triggered PiSugar sleep for {seconds} seconds via nc.")
-        except Exception as e:
-            log_error(f"Failed to trigger PiSugar sleep via nc: {e}")
-            print(f"Failed to trigger PiSugar sleep via nc: {e}")
-            # If sleep fails, wait as fallback
-            time.sleep(seconds)
-
 # ---------- LOAD CALIBRATION ----------
 def load_calibration(calibration_file="calibration.json"):
     """Load calibration values from calibration.json if present."""
@@ -337,7 +300,6 @@ SCRIPT_VERSION = 3  # Bumped version for deployment test
 class HealthHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/health':
-            pisugar_status = PiSugar().get_status()
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
@@ -346,7 +308,6 @@ class HealthHandler(BaseHTTPRequestHandler):
                 'script': 'color_logger_once.py',
                 'version': SCRIPT_VERSION,
                 'timestamp': datetime.now().isoformat(),
-                'pisugar_status': pisugar_status
             }
             self.wfile.write(json.dumps(response).encode())
         else:
@@ -389,7 +350,6 @@ try:
         log_stdout("Script started.")
         check_wifi()
         sensor = init_sensor()
-        pisugar = PiSugar()
 
         # Resend any queued payloads at the start
         resend_queued_payloads()
@@ -399,49 +359,51 @@ try:
         if hasattr(args, 'sensor_id') and args.sensor_id:
             sensor_id = args.sensor_id
 
+        readings = []
+        first_timestamp = None
         for i in range(NUM_READINGS):
             print("--- DEBUG: Entering main loop ---")
             print(f"color_logger_once.py version: {SCRIPT_VERSION} (deployed {datetime.now().isoformat()})")
             print("--- DEBUG: After version print ---")
             data = read_color(sensor)
+            if i == 0:
+                first_timestamp = data['timestamp']
+            readings.append(data)
             wetness = calculate_wetness_percent(data['b'], calibration)
             percent_str = f"{wetness * 100:.1f}%"
-
-            # Add calibration info to log and payload
             if calibration:
                 data['calibration'] = calibration
-
             line = (
                 f"{data['timestamp']}  R:{data['r']}  G:{data['g']}  "
                 f"B:{data['b']}  Lux:{data['lux']:.2f}  Wetness:{percent_str}"
             )
-
-            pisugar_status = pisugar.get_status()
-            print(f"PiSugar status: {pisugar_status}")
-            log_stdout(f"PiSugar status: {pisugar_status}")
-
-            post_data = {
-                "timestamp": data["timestamp"],
-                "moisture": data["b"],
-                "wetness_percent": wetness,
-                "lux": data["lux"],
-                "sensor_id": sensor_id,
-                "pisugar_status": pisugar_status,
-                "script_version": SCRIPT_VERSION,  # Add version to payload
-                "calibration": calibration if calibration else None
-            }
-
             with open(LOG_FILE, "a") as f:
                 f.write(line + "\n")
             log_stdout(line)
-            print(line)  # <-- Add this line to output to console
-
-            try:
-                send_to_receiver(post_data)
-            except Exception as e:
-                log_error(f"Send to receiver failed for reading {i+1}: {e}")
-                log_stdout(f"Send to receiver failed for reading {i+1}: {e}")
+            print(line)
             time.sleep(READ_INTERVAL)
+
+        # After collecting all readings, average them
+        avg_b = sum(d['b'] for d in readings) / NUM_READINGS
+        post_data = {
+            "timestamp": first_timestamp,
+            "moisture": avg_b
+        }
+        avg_line = (
+            f"AVG {first_timestamp}  B:{avg_b:.1f}"
+        )
+        with open(LOG_FILE, "a") as f:
+            f.write(avg_line + "\n")
+        log_stdout(avg_line)
+        print(avg_line)
+        try:
+            # Remove all other keys from post_data before sending
+            # Ensure no extra keys are present in the payload
+            clean_post_data = {k: post_data[k] for k in ("timestamp", "moisture")}
+            send_to_receiver(clean_post_data)
+        except Exception as e:
+            log_error(f"Send to receiver failed for averaged reading: {e}")
+            log_stdout(f"Send to receiver failed for averaged reading: {e}")
 
         # After measurements, stay awake for 2 minutes to allow abort
         print("Staying awake for 2 minutes before sleep. Press Ctrl+C to abort.")
@@ -450,7 +412,12 @@ try:
 
         # Sleep for 5 minutes using PiSugar API (now via netcat)
         try:
-            pisugar.sleep(300)
+            # Remove PiSugar logic and status reporting
+            # pisugar = PiSugar()  # REMOVED
+            # pisugar_status = pisugar.get_status()  # REMOVED
+            # print(f"PiSugar status: {pisugar_status}")  # REMOVED
+            # log_stdout(f"PiSugar status: {pisugar_status}")  # REMOVED
+            time.sleep(300)
         except Exception as e:
             log_error(f"Failed to trigger PiSugar sleep: {e}")
             print(f"Failed to trigger PiSugar sleep: {e}")
