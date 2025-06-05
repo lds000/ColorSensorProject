@@ -29,6 +29,7 @@ def load_config():
         "ERROR_LOG": "error_log.txt",
         "STDOUT_LOG": "stdout_log.txt",
         "NUM_READINGS": 3,
+        "READ_SPACING": 2,  # <-- Add default for spacing between readings (seconds)
         "READ_INTERVAL": 5,
         "RECEIVER_URL": "http://100.116.147.6:5000/soil-data"
     }
@@ -41,13 +42,16 @@ def load_config():
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--num-readings', type=int, help='Number of readings to take')
-parser.add_argument('--read-interval', type=int, help='Seconds between readings')
+parser.add_argument('--read-spacing', type=int, help='Seconds between readings in a group')  # <-- Add argument
+parser.add_argument('--read-interval', type=int, help='Minutes between groups')
 parser.add_argument('--receiver-url', type=str, help='Receiver URL for POST')
 args = parser.parse_args()
 
 CONFIG = load_config()
 if args.num_readings is not None:
     CONFIG["NUM_READINGS"] = args.num_readings
+if args.read_spacing is not None:
+    CONFIG["READ_SPACING"] = args.read_spacing
 if args.read_interval is not None:
     CONFIG["READ_INTERVAL"] = args.read_interval
 if args.receiver_url is not None:
@@ -58,6 +62,7 @@ LOG_FILE = CONFIG["LOG_FILE"]
 ERROR_LOG = CONFIG["ERROR_LOG"]
 STDOUT_LOG = CONFIG["STDOUT_LOG"]
 NUM_READINGS = CONFIG["NUM_READINGS"]
+READ_SPACING = CONFIG["READ_SPACING"]  # <-- Actually set variable
 READ_INTERVAL = CONFIG["READ_INTERVAL"]
 RECEIVER_URL = CONFIG["RECEIVER_URL"]
 
