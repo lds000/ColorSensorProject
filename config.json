@@ -1,5 +1,6 @@
 {
   "NUM_READINGS": 4,
+  "READ_SPACING": 5,
   "READ_INTERVAL": 5,
   "RECEIVER_URL": "http://100.116.147.6:5000/soil-data"
 }

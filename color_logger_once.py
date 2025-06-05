@@ -3,7 +3,7 @@ from board import D22, D27
 import adafruit_tcs34725
 import RPi.GPIO as GPIO
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 import socket
 import subprocess
 import requests
@@ -363,8 +363,6 @@ try:
         first_timestamp = None
         for i in range(NUM_READINGS):
             print("--- DEBUG: Entering main loop ---")
-            #print(f"color_logger_once.py version: {SCRIPT_VERSION} (deployed {datetime.now().isoformat()})")
-            #print("--- DEBUG: After version print ---")
             data = read_color(sensor)
             if i == 0:
                 first_timestamp = data['timestamp']
@@ -381,7 +379,8 @@ try:
                 f.write(line + "\n")
             log_stdout(line)
             print(line)
-            time.sleep(READ_INTERVAL)
+            if i < NUM_READINGS - 1:
+                time.sleep(READ_SPACING)  # Wait between samples in a group
 
         # After collecting all readings, average them
         avg_b = sum(d['b'] for d in readings) / NUM_READINGS
@@ -397,32 +396,19 @@ try:
         log_stdout(avg_line)
         print(avg_line)
         try:
-            # Remove all other keys from post_data before sending
-            # Ensure no extra keys are present in the payload
             clean_post_data = {k: post_data[k] for k in ("timestamp", "moisture")}
             send_to_receiver(clean_post_data)
         except Exception as e:
             log_error(f"Send to receiver failed for averaged reading: {e}")
             log_stdout(f"Send to receiver failed for averaged reading: {e}")
 
-        # After measurements, stay awake for 2 minutes to allow abort
-        print("Staying awake for 2 minutes before sleep. Press Ctrl+C to abort.")
-        log_stdout("Staying awake for 2 minutes before sleep. Press Ctrl+C to abort.")
-        time.sleep(120)
-
-        # Sleep for 5 minutes using PiSugar API (now via netcat)
-        try:
-            # Remove PiSugar logic and status reporting
-            # pisugar = PiSugar()  # REMOVED
-            # pisugar_status = pisugar.get_status()  # REMOVED
-            # print(f"PiSugar status: {pisugar_status}")  # REMOVED
-            # log_stdout(f"PiSugar status: {pisugar_status}")  # REMOVED
-            time.sleep(300)
-        except Exception as e:
-            log_error(f"Failed to trigger PiSugar sleep: {e}")
-            print(f"Failed to trigger PiSugar sleep: {e}")
-            # If sleep fails, wait 5 minutes as fallback
-            time.sleep(300)
+        # Wait until READ_INTERVAL minutes after the first reading's timestamp before starting next group
+        next_group_time = datetime.fromisoformat(first_timestamp) + timedelta(minutes=READ_INTERVAL)
+        now = datetime.now()
+        sleep_time = (next_group_time - now).total_seconds()
+        if sleep_time > 0:
+            print(f"Waiting {sleep_time:.1f} seconds until next group...")
+            time.sleep(sleep_time)
 
 except Exception as e:
     stack = traceback.format_exc()
