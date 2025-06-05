@@ -184,12 +184,12 @@ def calculate_wetness_percent(b, calibration=None):
     if calibration and 'white_stick' in calibration and 'blue_stick' in calibration:
         b_dry = calibration['white_stick']['b']
         b_wet = calibration['blue_stick']['b']
-        print(f"[DEBUG] Using calibration: b_dry={b_dry}, b_wet={b_wet}, b={b}")
+        #print(f"[DEBUG] Using calibration: b_dry={b_dry}, b_wet={b_wet}, b={b}")
         # Avoid division by zero
         if b_wet == b_dry:
             return 0.0
         result = max(0.0, min((b - b_dry) / (b_wet - b_dry), 1.0))
-        print(f"[DEBUG] Wetness calculation: ({b} - {b_dry}) / ({b_wet} - {b_dry}) = {result}")
+        #print(f"[DEBUG] Wetness calculation: ({b} - {b_dry}) / ({b_wet} - {b_dry}) = {result}")
         return result
     # Fallback to hardcoded values if no calibration
     b_dry_min = 14
@@ -363,8 +363,8 @@ try:
         first_timestamp = None
         for i in range(NUM_READINGS):
             print("--- DEBUG: Entering main loop ---")
-            print(f"color_logger_once.py version: {SCRIPT_VERSION} (deployed {datetime.now().isoformat()})")
-            print("--- DEBUG: After version print ---")
+            #print(f"color_logger_once.py version: {SCRIPT_VERSION} (deployed {datetime.now().isoformat()})")
+            #print("--- DEBUG: After version print ---")
             data = read_color(sensor)
             if i == 0:
                 first_timestamp = data['timestamp']
