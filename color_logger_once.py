@@ -342,23 +342,24 @@ try:
     else:
         print("No calibration file found. Running without calibration.")
         log_stdout("No calibration file found. Running without calibration.")
+
+    # --- Move GPIO and sensor setup outside the main loop ---
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(LED_PIN, GPIO.OUT)
+    GPIO.output(LED_PIN, GPIO.LOW)  # Ensure LED is OFF at start
+    log_stdout("Script started.")
+    check_wifi()
+    sensor = init_sensor()
+
+    # Resend any queued payloads at the start
+    resend_queued_payloads()
+
+    # Parameterize sensor_id
+    sensor_id = CONFIG.get("SENSOR_ID", "pi_zero_1")
+    if hasattr(args, 'sensor_id') and args.sensor_id:
+        sensor_id = args.sensor_id
+
     while True:
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setup(LED_PIN, GPIO.OUT)
-        GPIO.output(LED_PIN, GPIO.LOW)  # Ensure LED is OFF at start
-
-        log_stdout("Script started.")
-        check_wifi()
-        sensor = init_sensor()
-
-        # Resend any queued payloads at the start
-        resend_queued_payloads()
-
-        # Parameterize sensor_id
-        sensor_id = CONFIG.get("SENSOR_ID", "pi_zero_1")
-        if hasattr(args, 'sensor_id') and args.sensor_id:
-            sensor_id = args.sensor_id
-
         readings = []
         first_timestamp = None
         for i in range(NUM_READINGS):
