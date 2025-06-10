@@ -3,7 +3,7 @@ import time
 from board import D22, D27
 from adafruit_bitbangio import I2C
 import adafruit_tcs34725
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # --- CONFIG ---
 FLOW_SENSOR_PIN = 25  # BCM numbering
