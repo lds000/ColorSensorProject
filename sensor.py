@@ -7,7 +7,7 @@ from logging_utils import log_stdout, log_error
 import threading
 
 LED_PIN = 17
-FLOW_SENSOR_PIN = 26
+FLOW_SENSOR_PIN = 25
 FLOW_PULSES_PER_LITRE = 450
 
 flow_pulse_count = 0
