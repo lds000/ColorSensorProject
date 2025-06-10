@@ -12,14 +12,14 @@
           ]
         }
       },
-      "command": "git add . && git commit -m 'Deploy via VS Code Task' && git push && ssh lds00@100.117.254.20 'cd ~/ColorSensorTest && git pull && python3 color_logger_combined.py'",
+      "command": "git add . && git commit -m 'Deploy via VS Code Task' && git push && ssh lds00@100.117.254.20 'cd ~/ColorSensorTest && git pull && python3 SensorMonitor.py'",
       "group": "build",
       "problemMatcher": []
     },
     {
-      "label": "Run color_logger_combined.py on Pi",
+      "label": "Run SensorMonitor.py on Pi",
       "type": "shell",
-      "command": "ssh lds00@100.117.254.20 'cd ~/ColorSensorTest && python3 color_logger_combined.py'",
+      "command": "ssh lds00@100.117.254.20 'cd ~/ColorSensorTest && python3 SensorMonitor.py'",
       "group": "build",
       "problemMatcher": []
     }
