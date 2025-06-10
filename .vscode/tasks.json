@@ -12,7 +12,7 @@
           ]
         }
       },
-      "command": "git add . && git commit -m 'Deploy via VS Code Task' -a && git push && ssh lds00@100.117.254.20 'cd ~/ColorSensorTest && git pull && python3 color_logger_once.py'",
+      "command": "git add . && git commit -m 'Deploy via VS Code Task' -a && git push && ssh lds00@100.117.254.20 'cd ~/ColorSensorTest && git pull && python3 color_logger_combined.py'",
       "group": "build",
       "problemMatcher": []
     },
