@@ -262,21 +262,23 @@ def send_to_receiver(payload):
 
 # ---------- SENSOR READER ----------
 def read_color(sensor):
-    """Read color sensor values and return as a dict."""
+    """Read color sensor values and return as a dict. LED is always turned off after reading."""
     log_stdout("Reading color sensor...")
     GPIO.output(LED_PIN, GPIO.HIGH)
-    time.sleep(0.3)
-    r, g, b = sensor.color_rgb_bytes
-    lux = sensor.lux
-    GPIO.output(LED_PIN, GPIO.LOW)
-    log_stdout(f"Sensor values: R={r}, G={g}, B={b}, Lux={lux}")
-    return {
-        "timestamp": datetime.now().isoformat(),
-        "r": int(r),
-        "g": int(g),
-        "b": int(b),
-        "lux": float(lux)
-    }
+    try:
+        time.sleep(0.3)
+        r, g, b = sensor.color_rgb_bytes
+        lux = sensor.lux
+        log_stdout(f"Sensor values: R={r}, G={g}, B={b}, Lux={lux}")
+        return {
+            "timestamp": datetime.now().isoformat(),
+            "r": int(r),
+            "g": int(g),
+            "b": int(b),
+            "lux": float(lux)
+        }
+    finally:
+        GPIO.output(LED_PIN, GPIO.LOW)
 
 # ---------- ABORT SHUTDOWN CHECK ----------
 def should_abort_shutdown():
