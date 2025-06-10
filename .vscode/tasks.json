@@ -7,7 +7,9 @@
       "options": {
         "shell": {
           "executable": "C:\\Program Files\\Git\\bin\\bash.exe",
-          "args": ["-c"]
+          "args": [
+            "-c"
+          ]
         }
       },
       "command": "git add . && git commit -m 'Deploy via VS Code Task' -a && git push && ssh lds00@100.117.254.20 'cd ~/ColorSensorTest && git pull && python3 color_logger_once.py'",
@@ -15,9 +17,9 @@
       "problemMatcher": []
     },
     {
-      "label": "Run color_logger_once.py on Pi",
+      "label": "Run color_logger_combined.py on Pi",
       "type": "shell",
-      "command": "ssh lds00@100.117.254.20 'cd ~/ColorSensorTest && python3 color_logger_once.py'",
+      "command": "ssh lds00@100.117.254.20 'cd ~/ColorSensorTest && python3 color_logger_combined.py'",
       "group": "build",
       "problemMatcher": []
     }
