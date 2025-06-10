@@ -12,7 +12,7 @@
           ]
         }
       },
-      "command": "git add . && git commit -m 'Deploy via VS Code Task' && git push && ssh lds00@100.117.254.20 'cd ~/ColorSensorTest && git pull && python3 SensorMonitor.py'",
+      "command": "git add . && git commit -m 'Deploy via VS Code Task' || true && git push && ssh lds00@100.117.254.20 'cd ~/ColorSensorTest && git pull && python3 SensorMonitor.py'",
       "group": "build",
       "problemMatcher": []
     },
