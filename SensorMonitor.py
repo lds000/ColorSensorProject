@@ -65,32 +65,31 @@ def poll_flow_meter(duration_s):
 
 def main():
     sensor = init_color_sensor()
+    last_color_time = time.time()
+    color_readings = []
     try:
         while True:
-            print("--- Starting new group ---")
-            color_readings = []
-            first_timestamp = None
-            # Poll flow meter for the total duration of color readings
-            total_color_time = (NUM_COLOR_READINGS - 1) * COLOR_READ_SPACING + 1
-            flow_pulse_count, flow_litres = poll_flow_meter(total_color_time)
-            for i in range(NUM_COLOR_READINGS):
-                data = read_color(sensor)
-                if i == 0:
-                    first_timestamp = data["timestamp"]
-                color_readings.append(data)
-                print(f"Color reading {i+1}: {data}")
-                if i < NUM_COLOR_READINGS - 1:
-                    time.sleep(COLOR_READ_SPACING)
-            avg_b = sum(d['b'] for d in color_readings) / NUM_COLOR_READINGS
-            avg_lux = sum(d['lux'] for d in color_readings) / NUM_COLOR_READINGS
-            print(f"Group result: timestamp={first_timestamp}, avg_b={avg_b:.2f}, avg_lux={avg_lux:.2f}, flow_pulses={flow_pulse_count}, flow_litres={flow_litres:.4f}")
-            # Wait until next group
-            next_group_time = datetime.fromisoformat(first_timestamp) + timedelta(minutes=GROUP_INTERVAL)
-            now = datetime.now()
-            sleep_time = (next_group_time - now).total_seconds()
-            if sleep_time > 0:
-                print(f"Waiting {sleep_time:.1f} seconds until next group...")
-                time.sleep(sleep_time)
+            # --- Flow reporting every second ---
+            flow_pulse_count, flow_litres = poll_flow_meter(1.0)
+            flow_timestamp = datetime.now().isoformat()
+            print(f"Flow: timestamp={flow_timestamp}, pulses={flow_pulse_count}, litres={flow_litres:.4f}")
+
+            # --- Moisture (color) reporting every 5 minutes ---
+            now = time.time()
+            if now - last_color_time >= GROUP_INTERVAL * 60:
+                print("--- Starting new color group ---")
+                color_readings = []
+                for i in range(NUM_COLOR_READINGS):
+                    data = read_color(sensor)
+                    color_readings.append(data)
+                    print(f"Color reading {i+1}: {data}")
+                    if i < NUM_COLOR_READINGS - 1:
+                        time.sleep(COLOR_READ_SPACING)
+                avg_b = sum(d['b'] for d in color_readings) / NUM_COLOR_READINGS
+                avg_lux = sum(d['lux'] for d in color_readings) / NUM_COLOR_READINGS
+                first_timestamp = color_readings[0]['timestamp']
+                print(f"Moisture: timestamp={first_timestamp}, avg_b={avg_b:.2f}, avg_lux={avg_lux:.2f}")
+                last_color_time = now
     except KeyboardInterrupt:
         print("Exiting...")
     finally:
