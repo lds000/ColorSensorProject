@@ -61,10 +61,21 @@ def read_color(sensor):
 
 def setup_flow_gpio():
     global flow_lock
+    # Always set up as input with pull-up before adding event detect
     GPIO.setup(FLOW_SENSOR_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     flow_lock = threading.Lock()
-    GPIO.add_event_detect(FLOW_SENSOR_PIN, GPIO.FALLING, callback=flow_pulse_callback)
-    log_stdout(f"Flow meter GPIO {FLOW_SENSOR_PIN} set up with pull-up and event detect.")
+    try:
+        GPIO.add_event_detect(FLOW_SENSOR_PIN, GPIO.FALLING, callback=flow_pulse_callback)
+        log_stdout(f"Flow meter GPIO {FLOW_SENSOR_PIN} set up with pull-up and event detect.")
+    except RuntimeError as e:
+        log_error(f"Failed to add edge detection on pin {FLOW_SENSOR_PIN}: {e}. Attempting to remove and re-add.")
+        try:
+            GPIO.remove_event_detect(FLOW_SENSOR_PIN)
+            GPIO.add_event_detect(FLOW_SENSOR_PIN, GPIO.FALLING, callback=flow_pulse_callback)
+            log_stdout(f"Flow meter GPIO {FLOW_SENSOR_PIN} event detect re-added after removal.")
+        except Exception as e2:
+            log_error(f"Failed to re-add edge detection on pin {FLOW_SENSOR_PIN}: {e2}")
+            raise
 
 def cleanup_flow_gpio():
     GPIO.remove_event_detect(FLOW_SENSOR_PIN)
