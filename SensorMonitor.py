@@ -1,6 +1,6 @@
 import RPi.GPIO as GPIO
 import time
-from board import D22, D27
+from board import D22, D27, D4
 from adafruit_bitbangio import I2C
 import adafruit_tcs34725
 from datetime import datetime, timedelta
@@ -14,7 +14,7 @@ LED_PIN = 17
 NUM_COLOR_READINGS = 4
 COLOR_READ_SPACING = 2  # seconds between color readings
 GROUP_INTERVAL = 5  # minutes between groups
-DHT_PIN = 4  # GPIO4 for AM2302/DHT22
+DHT_PIN = D4  # Use board pin object for AM2302/DHT22
 
 # --- SETUP ---
 GPIO.setmode(GPIO.BCM)
