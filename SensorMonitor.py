@@ -97,7 +97,7 @@ def main():
             }
             print(f"Flow: {flow_data}")
             try:
-                requests.post("http://100.117.254.20:8000/env-latest", json=flow_data, timeout=2)
+                requests.post("http://127.0.0.1:5000/env-latest", json=flow_data, timeout=2)
             except Exception as e:
                 print(f"Failed to POST flow data: {e}")
 
@@ -107,7 +107,7 @@ def main():
                 if dht_data:
                     print(f"DHT22: {dht_data}")
                     try:
-                        requests.post("http://100.117.254.20:8000/env-latest", json=dht_data, timeout=2)
+                        requests.post("http://127.0.0.1:5000/env-latest", json=dht_data, timeout=2)
                     except Exception as e:
                         print(f"Failed to POST DHT22 data: {e}")
                 last_dht_time = time.time()
@@ -133,7 +133,7 @@ def main():
                 }
                 print(f"Moisture: {moisture_data}")
                 try:
-                    requests.post("http://100.117.254.20:8000/env-history", json=moisture_data, timeout=2)
+                    requests.post("http://127.0.0.1:5000/env-history", json=moisture_data, timeout=2)
                 except Exception as e:
                     print(f"Failed to POST moisture data: {e}")
                 last_color_time = now
