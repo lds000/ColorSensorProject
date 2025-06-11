@@ -87,30 +87,28 @@ def main():
     color_readings = []
     try:
         while True:
-            # --- Flow reporting every second ---
+            # --- Flow, DHT22, and Pressure reporting every second ---
             flow_pulse_count, flow_litres = poll_flow_meter(1.0)
             flow_timestamp = datetime.now().isoformat()
-            flow_data = {
-                "timestamp": flow_timestamp,
-                "flow_pulses": flow_pulse_count,
-                "flow_litres": flow_litres
-            }
-            print(f"Flow: {flow_data}")
-            try:
-                requests.post("http://127.0.0.1:5000/env-latest", json=flow_data, timeout=2)
-            except Exception as e:
-                print(f"Failed to POST flow data: {e}")
-
-            # --- DHT22 reporting every second ---
-            if time.time() - last_dht_time >= 1.0:
-                dht_data = read_dht_sensor(dht_device)
-                if dht_data:
-                    print(f"DHT22: {dht_data}")
-                    try:
-                        requests.post("http://127.0.0.1:5000/env-latest", json=dht_data, timeout=2)
-                    except Exception as e:
-                        print(f"Failed to POST DHT22 data: {e}")
-                last_dht_time = time.time()
+            dht_data = read_dht_sensor(dht_device)
+            # TODO: Replace this with actual pressure sensor reading
+            pressure_kpa = None  # e.g., read_pressure_sensor()
+            if dht_data:
+                combined_data = {
+                    "timestamp": flow_timestamp,
+                    "flow_pulses": flow_pulse_count,
+                    "flow_litres": flow_litres,
+                    "temperature": dht_data.get("temperature"),
+                    "humidity": dht_data.get("humidity"),
+                    "pressure_kpa": pressure_kpa
+                }
+                print(f"Combined: {combined_data}")
+                try:
+                    requests.post("http://127.0.0.1:5000/env-latest", json=combined_data, timeout=2)
+                except Exception as e:
+                    print(f"Failed to POST combined data: {e}")
+            else:
+                print("DHT22: No valid reading this second.")
 
             # --- Moisture (color) reporting every 5 minutes ---
             now = time.time()
