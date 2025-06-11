@@ -66,4 +66,4 @@ def ota_update():
     return jsonify({'status': 'ok', 'message': 'OTA update triggered'})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
+    app.run(host='0.0.0.0', port=5000)
