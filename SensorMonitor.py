@@ -4,6 +4,8 @@ from board import D22, D27
 from adafruit_bitbangio import I2C
 import adafruit_tcs34725
 from datetime import datetime, timedelta
+import requests
+import adafruit_dht
 
 # --- CONFIG ---
 FLOW_SENSOR_PIN = 25  # BCM numbering
@@ -12,6 +14,7 @@ LED_PIN = 17
 NUM_COLOR_READINGS = 4
 COLOR_READ_SPACING = 2  # seconds between color readings
 GROUP_INTERVAL = 5  # minutes between groups
+DHT_PIN = 4  # GPIO4 for AM2302/DHT22
 
 # --- SETUP ---
 GPIO.setmode(GPIO.BCM)
@@ -63,16 +66,51 @@ def poll_flow_meter(duration_s):
     litres = pulse_count / FLOW_PULSES_PER_LITRE
     return pulse_count, litres
 
+def read_dht_sensor(dht_device):
+    try:
+        temperature = dht_device.temperature
+        humidity = dht_device.humidity
+        return {
+            "timestamp": datetime.now().isoformat(),
+            "temperature": temperature,
+            "humidity": humidity
+        }
+    except Exception as e:
+        print(f"DHT22 read error: {e}")
+        return None
+
 def main():
     sensor = init_color_sensor()
+    dht_device = adafruit_dht.DHT22(DHT_PIN)
     last_color_time = time.time()
+    last_dht_time = 0
     color_readings = []
     try:
         while True:
             # --- Flow reporting every second ---
             flow_pulse_count, flow_litres = poll_flow_meter(1.0)
             flow_timestamp = datetime.now().isoformat()
-            print(f"Flow: timestamp={flow_timestamp}, pulses={flow_pulse_count}, litres={flow_litres:.4f}")
+            flow_data = {
+                "timestamp": flow_timestamp,
+                "flow_pulses": flow_pulse_count,
+                "flow_litres": flow_litres
+            }
+            print(f"Flow: {flow_data}")
+            try:
+                requests.post("http://100.117.254.20:8000/env-latest", json=flow_data, timeout=2)
+            except Exception as e:
+                print(f"Failed to POST flow data: {e}")
+
+            # --- DHT22 reporting every second ---
+            if time.time() - last_dht_time >= 1.0:
+                dht_data = read_dht_sensor(dht_device)
+                if dht_data:
+                    print(f"DHT22: {dht_data}")
+                    try:
+                        requests.post("http://100.117.254.20:8000/env-latest", json=dht_data, timeout=2)
+                    except Exception as e:
+                        print(f"Failed to POST DHT22 data: {e}")
+                last_dht_time = time.time()
 
             # --- Moisture (color) reporting every 5 minutes ---
             now = time.time()
@@ -88,7 +126,16 @@ def main():
                 avg_b = sum(d['b'] for d in color_readings) / NUM_COLOR_READINGS
                 avg_lux = sum(d['lux'] for d in color_readings) / NUM_COLOR_READINGS
                 first_timestamp = color_readings[0]['timestamp']
-                print(f"Moisture: timestamp={first_timestamp}, avg_b={avg_b:.2f}, avg_lux={avg_lux:.2f}")
+                moisture_data = {
+                    "timestamp": first_timestamp,
+                    "moisture": avg_b,
+                    "lux": avg_lux
+                }
+                print(f"Moisture: {moisture_data}")
+                try:
+                    requests.post("http://100.117.254.20:8000/env-history", json=moisture_data, timeout=2)
+                except Exception as e:
+                    print(f"Failed to POST moisture data: {e}")
                 last_color_time = now
     except KeyboardInterrupt:
         print("Exiting...")
