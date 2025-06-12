@@ -104,7 +104,7 @@ def main():
                 }
                 print(f"Combined: {combined_data}")
                 try:
-                    requests.post("http://127.0.0.1:5000/env-latest", json=combined_data, timeout=2)
+                    requests.post("http://127.0.0.1:8000/env-latest", json=combined_data, timeout=2)
                 except Exception as e:
                     print(f"Failed to POST combined data: {e}")
             else:
@@ -131,7 +131,7 @@ def main():
                 }
                 print(f"Moisture: {moisture_data}")
                 try:
-                    requests.post("http://127.0.0.1:5000/env-history", json=moisture_data, timeout=2)
+                    requests.post("http://127.0.0.1:8000/env-history", json=moisture_data, timeout=2)
                 except Exception as e:
                     print(f"Failed to POST moisture data: {e}")
                 last_color_time = now
