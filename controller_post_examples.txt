@@ -1,0 +1,40 @@
+# Example POST endpoints and JSON payloads for controller (Pi 4)
+
+## 1. Plant Data
+POST http://<server-ip>:8000/plant-latest
+```json
+{
+  "timestamp": "2025-06-11T14:23:45.123456",
+  "moisture": 123.4,
+  "lux": 456.7,
+  "soil_temperature": 22.5
+}
+```
+
+## 2. Sets Data
+POST http://<server-ip>:8000/sets-latest
+```json
+{
+  "timestamp": "2025-06-11T14:23:45.123456",
+  "flow_pulses": 42,
+  "flow_litres": 0.093,
+  "pressure_kpa": 101.3
+}
+```
+
+## 3. Environment Data
+POST http://<server-ip>:8000/environment-latest
+```json
+{
+  "timestamp": "2025-06-11T14:23:45.123456",
+  "temperature": 24.1,
+  "humidity": 55.2,
+  "wind_speed": 3.7,
+  "barometric_pressure": 1008.2
+}
+```
+
+# Notes
+- Replace <server-ip> with the actual IP address or hostname of your Pi Zero running the Flask server.
+- All fields are required as per your data model, but you can use null for any value that is not available.
+- The server will accept and store any valid JSON with these fields.
