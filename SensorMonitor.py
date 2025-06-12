@@ -87,33 +87,48 @@ def main():
     color_readings = []
     try:
         while True:
-            # --- Flow, DHT22, and Pressure reporting every second ---
+            # --- Sets (flow and pressure) reporting every second ---
             flow_pulse_count, flow_litres = poll_flow_meter(1.0)
             flow_timestamp = datetime.now().isoformat()
-            dht_data = read_dht_sensor(dht_device)
             # TODO: Replace this with actual pressure sensor reading
             pressure_kpa = None  # e.g., read_pressure_sensor()
+            sets_data = {
+                "timestamp": flow_timestamp,
+                "flow_pulses": flow_pulse_count,
+                "flow_litres": flow_litres,
+                "pressure_kpa": pressure_kpa
+            }
+            print(f"Sets: {sets_data}")
+            try:
+                requests.post("http://127.0.0.1:8000/sets-latest", json=sets_data, timeout=2)
+            except Exception as e:
+                print(f"Failed to POST sets data: {e}")
+
+            # --- Environment (temperature, humidity, wind, barometric pressure) reporting every second ---
+            dht_data = read_dht_sensor(dht_device)
+            # TODO: Add wind speed and barometric pressure readings
+            wind_speed = None
+            barometric_pressure = None
             if dht_data:
-                combined_data = {
-                    "timestamp": flow_timestamp,
-                    "flow_pulses": flow_pulse_count,
-                    "flow_litres": flow_litres,
+                environment_data = {
+                    "timestamp": dht_data["timestamp"],
                     "temperature": dht_data.get("temperature"),
                     "humidity": dht_data.get("humidity"),
-                    "pressure_kpa": pressure_kpa
+                    "wind_speed": wind_speed,
+                    "barometric_pressure": barometric_pressure
                 }
-                print(f"Combined: {combined_data}")
+                print(f"Environment: {environment_data}")
                 try:
-                    requests.post("http://127.0.0.1:8000/env-latest", json=combined_data, timeout=2)
+                    requests.post("http://127.0.0.1:8000/environment-latest", json=environment_data, timeout=2)
                 except Exception as e:
-                    print(f"Failed to POST combined data: {e}")
+                    print(f"Failed to POST environment data: {e}")
             else:
                 print("DHT22: No valid reading this second.")
 
-            # --- Moisture (color) reporting every 5 minutes ---
+            # --- Plant (moisture, soil temperature) reporting every 5 minutes ---
             now = time.time()
             if now - last_color_time >= GROUP_INTERVAL * 60:
-                print("--- Starting new color group ---")
+                print("--- Starting new plant group ---")
                 color_readings = []
                 for i in range(NUM_COLOR_READINGS):
                     data = read_color(sensor)
@@ -124,16 +139,19 @@ def main():
                 avg_b = sum(d['b'] for d in color_readings) / NUM_COLOR_READINGS
                 avg_lux = sum(d['lux'] for d in color_readings) / NUM_COLOR_READINGS
                 first_timestamp = color_readings[0]['timestamp']
-                moisture_data = {
+                # TODO: Add soil temperature reading
+                soil_temperature = None
+                plant_data = {
                     "timestamp": first_timestamp,
                     "moisture": avg_b,
-                    "lux": avg_lux
+                    "lux": avg_lux,
+                    "soil_temperature": soil_temperature
                 }
-                print(f"Moisture: {moisture_data}")
+                print(f"Plant: {plant_data}")
                 try:
-                    requests.post("http://127.0.0.1:8000/env-history", json=moisture_data, timeout=2)
+                    requests.post("http://127.0.0.1:8000/plant-latest", json=plant_data, timeout=2)
                 except Exception as e:
-                    print(f"Failed to POST moisture data: {e}")
+                    print(f"Failed to POST plant data: {e}")
                 last_color_time = now
     except KeyboardInterrupt:
         print("Exiting...")
