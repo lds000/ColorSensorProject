@@ -6,6 +6,8 @@ import adafruit_tcs34725
 from datetime import datetime, timedelta
 import requests
 import adafruit_dht
+import paho.mqtt.client as mqtt
+import json
 
 # --- CONFIG ---
 FLOW_SENSOR_PIN = 25  # BCM numbering
@@ -87,12 +89,18 @@ def main():
     color_readings = []
     set_names = ["Set1", "Set2", "Set3"]  # Replace with your actual set names
     set_cycle_interval = 10  # seconds per set (for demo logic)
+
+    # MQTT setup
+    mqtt_broker = "100.116.147.6"  # MQTT broker/controller Pi IP address
+    mqtt_port = 1883
+    mqtt_client = mqtt.Client()
+    mqtt_client.connect(mqtt_broker, mqtt_port, 60)
+
     try:
         while True:
             # --- Sets (flow and pressure) reporting every second ---
             flow_pulse_count, flow_litres = poll_flow_meter(1.0)
             flow_timestamp = datetime.now().isoformat()
-            # TODO: Replace this with actual pressure sensor reading
             pressure_kpa = None  # e.g., read_pressure_sensor()
             sets_data = {
                 "timestamp": flow_timestamp,
@@ -102,13 +110,12 @@ def main():
             }
             print(f"Sets: {sets_data}")
             try:
-                requests.post("http://127.0.0.1:8000/sets-latest", json=sets_data, timeout=2)
+                mqtt_client.publish("sensors/sets", json.dumps(sets_data))
             except Exception as e:
-                print(f"Failed to POST sets data: {e}")
+                print(f"Failed to publish sets data: {e}")
 
             # --- Environment (temperature, humidity, wind, barometric pressure) reporting every second ---
             dht_data = read_dht_sensor(dht_device)
-            # TODO: Add wind speed and barometric pressure readings
             wind_speed = None
             barometric_pressure = None
             if dht_data:
@@ -121,9 +128,9 @@ def main():
                 }
                 print(f"Environment: {environment_data}")
                 try:
-                    requests.post("http://127.0.0.1:8000/environment-latest", json=environment_data, timeout=2)
+                    mqtt_client.publish("sensors/environment", json.dumps(environment_data))
                 except Exception as e:
-                    print(f"Failed to POST environment data: {e}")
+                    print(f"Failed to publish environment data: {e}")
             else:
                 print("DHT22: No valid reading this second.")
 
@@ -141,7 +148,6 @@ def main():
                 avg_b = sum(d['b'] for d in color_readings) / NUM_COLOR_READINGS
                 avg_lux = sum(d['lux'] for d in color_readings) / NUM_COLOR_READINGS
                 first_timestamp = color_readings[0]['timestamp']
-                # TODO: Add soil temperature reading
                 soil_temperature = None
                 plant_data = {
                     "timestamp": first_timestamp,
@@ -151,16 +157,17 @@ def main():
                 }
                 print(f"Plant: {plant_data}")
                 try:
-                    requests.post("http://127.0.0.1:8000/plant-latest", json=plant_data, timeout=2)
+                    mqtt_client.publish("sensors/plant", json.dumps(plant_data))
                 except Exception as e:
-                    print(f"Failed to POST plant data: {e}")
+                    print(f"Failed to publish plant data: {e}")
                 last_color_time = now
     except KeyboardInterrupt:
         print("Exiting...")
     finally:
         GPIO.output(LED_PIN, GPIO.LOW)
         GPIO.cleanup()
-        print("GPIO cleaned up.")
+        mqtt_client.disconnect()
+        print("GPIO cleaned up and MQTT disconnected.")
 
 if __name__ == "__main__":
     main()
