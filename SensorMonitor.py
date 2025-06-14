@@ -107,8 +107,7 @@ def poll_wind_anemometer(duration_s):
 def main():
     sensor = init_color_sensor()
     dht_device = adafruit_dht.DHT22(DHT_PIN)
-    last_color_time =
-     time.time()
+    last_color_time = time.time()
     last_dht_time = 0
     color_readings = []
     set_names = ["Set1", "Set2", "Set3"]  # Replace with your actual set names
