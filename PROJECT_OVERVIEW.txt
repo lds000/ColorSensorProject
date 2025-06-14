@@ -149,6 +149,35 @@ ColorSensorProject/
 
 ---
 
+## Sensor Wiring Table
+| Sensor         | Wire Color | Pi Pin/Interface      | Notes/Details                        |
+|----------------|------------|----------------------|--------------------------------------|
+| Flow           | (see datasheet) | GPIO 25 (BCM)      | Digital pulse input                  |
+| Wind (NPN/NPNR)| Brown      | 5V                   | Power + (5–30V)
+|                | Black      | GND                  | Power – (Ground)
+|                | Green      | GPIO 24 (BCM)        | Pulse output (P/FOUT), use voltage divider if 5V
+|                | Blue       | (optional)           | NPNR output (internal pull-up), can also use for GPIO 24
+| DHT22          | (see datasheet) | GPIO 4 (board.D4)  | Digital, Adafruit library            |
+| Color Sensor   | (see datasheet) | I2C (GPIO 22/27)   | TCS34725, I2C bus                    |
+| LED            | (see datasheet) | GPIO 17 (BCM)      | Output                               |
+
+### Wind Sensor Wiring (NPN/NPNR Output)
+- **Brown (Power +):** Connect to Pi 5V pin
+- **Black (Power –):** Connect to Pi GND
+- **Green (P/FOUT):** Connect to GPIO 24 (BCM) on Pi (use a voltage divider if output is 5V)
+- **Blue (NPNR):** If using NPNR, this is also a pulse output with internal pull-up (can use instead of green)
+
+**Note:**
+- If your wind sensor output is 5V, use a voltage divider (e.g., 10kΩ/15kΩ) to drop the signal to 3.3V for the Pi GPIO.
+- Only one pulse output wire (green or blue) is needed for GPIO input.
+
+### Wind Speed Calculation
+- 20 pulses = 1 rotation
+- 1 rotation/sec = 1.75 m/s
+- **Formula:** `wind_speed = (pulse_count_per_second) * 0.0875` (m/s)
+
+---
+
 ## Notes
 - The server stores data in memory only; restarting the server will clear all history.
 - Add real sensor reading logic for soil temperature, wind speed, and barometric pressure as needed.

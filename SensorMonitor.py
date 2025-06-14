@@ -17,12 +17,14 @@ NUM_COLOR_READINGS = 4
 COLOR_READ_SPACING = 2  # seconds between color readings
 GROUP_INTERVAL = 5  # minutes between groups
 DHT_PIN = D4  # Use board pin object for AM2302/DHT22
+WIND_SENSOR_PIN = 5  # BCM numbering for wind anemometer (using blue wire)
 
 # --- SETUP ---
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(LED_PIN, GPIO.OUT)
 GPIO.output(LED_PIN, GPIO.LOW)
 GPIO.setup(FLOW_SENSOR_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(WIND_SENSOR_PIN, GPIO.IN)
 
 def init_color_sensor():
     i2c = I2C(scl=D22, sda=D27)
@@ -81,10 +83,32 @@ def read_dht_sensor(dht_device):
         print(f"DHT22 read error: {e}")
         return None
 
+# Wind pulse counting using interrupt
+wind_pulse_count = 0
+
+def wind_pulse_callback(channel):
+    global wind_pulse_count
+    wind_pulse_count += 1
+
+GPIO.add_event_detect(WIND_SENSOR_PIN, GPIO.FALLING, callback=wind_pulse_callback)
+
+def poll_wind_anemometer(duration_s):
+    pulse_count = 0
+    last_state = GPIO.input(WIND_SENSOR_PIN)
+    start = time.time()
+    while time.time() - start < duration_s:
+        current_state = GPIO.input(WIND_SENSOR_PIN)
+        if last_state == 1 and current_state == 0:
+            pulse_count += 1
+        last_state = current_state
+        time.sleep(0.001)
+    return pulse_count
+
 def main():
     sensor = init_color_sensor()
     dht_device = adafruit_dht.DHT22(DHT_PIN)
-    last_color_time = time.time()
+    last_color_time =
+     time.time()
     last_dht_time = 0
     color_readings = []
     set_names = ["Set1", "Set2", "Set3"]  # Replace with your actual set names
@@ -114,9 +138,15 @@ def main():
             except Exception as e:
                 print(f"Failed to publish sets data: {e}")
 
+            # --- Wind speed reporting every second ---
+            start_count = wind_pulse_count
+            pin_state = GPIO.input(WIND_SENSOR_PIN)
+            time.sleep(1)  # Count for 1 second
+            pulses = wind_pulse_count - start_count
+            wind_speed = (pulses / 20) * 1.75  # 20 pulses = 1 rotation = 1.75 m/s
+
             # --- Environment (temperature, humidity, wind, barometric pressure) reporting every second ---
             dht_data = read_dht_sensor(dht_device)
-            wind_speed = None
             barometric_pressure = None
             if dht_data:
                 environment_data = {
@@ -126,7 +156,7 @@ def main():
                     "wind_speed": wind_speed,
                     "barometric_pressure": barometric_pressure
                 }
-                print(f"Environment: {environment_data}")
+                print(f"Environment: {environment_data}, GPIO {WIND_SENSOR_PIN} state: {pin_state}")
                 try:
                     mqtt_client.publish("sensors/environment", json.dumps(environment_data))
                 except Exception as e:
