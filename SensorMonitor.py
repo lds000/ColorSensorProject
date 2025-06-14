@@ -26,15 +26,6 @@ GPIO.output(LED_PIN, GPIO.LOW)
 GPIO.setup(FLOW_SENSOR_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(WIND_SENSOR_PIN, GPIO.IN)
 
-# Wind pulse counting using interrupt (no internal pull-up, external 10kΩ pull-up to 3.3V is used)
-wind_pulse_count = 0
-
-def wind_pulse_callback(channel):
-    global wind_pulse_count
-    wind_pulse_count += 1
-
-GPIO.add_event_detect(WIND_SENSOR_PIN, GPIO.FALLING, callback=wind_pulse_callback)
-
 def init_color_sensor():
     i2c = I2C(scl=D22, sda=D27)
     while not i2c.try_lock():
