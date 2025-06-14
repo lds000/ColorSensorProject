@@ -26,6 +26,15 @@ GPIO.output(LED_PIN, GPIO.LOW)
 GPIO.setup(FLOW_SENSOR_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(WIND_SENSOR_PIN, GPIO.IN)
 
+# Wind pulse counting using interrupt (no internal pull-up, external 10kΩ pull-up to 3.3V is used)
+wind_pulse_count = 0
+
+def wind_pulse_callback(channel):
+    global wind_pulse_count
+    wind_pulse_count += 1
+
+GPIO.add_event_detect(WIND_SENSOR_PIN, GPIO.FALLING, callback=wind_pulse_callback)
+
 def init_color_sensor():
     i2c = I2C(scl=D22, sda=D27)
     while not i2c.try_lock():
@@ -82,27 +91,6 @@ def read_dht_sensor(dht_device):
     except Exception as e:
         print(f"DHT22 read error: {e}")
         return None
-
-# Wind pulse counting using interrupt
-wind_pulse_count = 0
-
-def wind_pulse_callback(channel):
-    global wind_pulse_count
-    wind_pulse_count += 1
-
-GPIO.add_event_detect(WIND_SENSOR_PIN, GPIO.FALLING, callback=wind_pulse_callback)
-
-def poll_wind_anemometer(duration_s):
-    pulse_count = 0
-    last_state = GPIO.input(WIND_SENSOR_PIN)
-    start = time.time()
-    while time.time() - start < duration_s:
-        current_state = GPIO.input(WIND_SENSOR_PIN)
-        if last_state == 1 and current_state == 0:
-            pulse_count += 1
-        last_state = current_state
-        time.sleep(0.001)
-    return pulse_count
 
 def main():
     sensor = init_color_sensor()
