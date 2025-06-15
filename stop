@@ -1,4 +1,0 @@
-#!/bin/bash
-echo "Stopping colorsensor.service..."
-sudo systemctl stop colorsensor.service
-echo "Service stopped."

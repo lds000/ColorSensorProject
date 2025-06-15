@@ -1,0 +1,110 @@
+Controller Pi (SensorMonitor.py) - Implementation & Integration Details
+============================================================
+
+SensorMonitor.py Details
+------------------------
+
+Main Loop Structure:
+- The main loop runs indefinitely, polling each sensor and publishing data at fixed intervals.
+- Every second:
+  - Flow sensor is polled for 1 second; results are published to `sensors/sets`.
+  - Wind sensor is polled for 1 second; wind speed is calculated.
+  - DHT22 (temperature/humidity) is read; results, along with wind speed, are published to `sensors/environment`.
+- Every 5 minutes:
+  - Four color sensor readings are taken (2 seconds apart), averaged, and published to `sensors/plant`.
+
+Key Classes/Functions:
+- `init_color_sensor()`: Initializes the TCS34725 color sensor via I2C.
+- `read_color(sensor)`: Reads RGB and lux from the color sensor.
+- `poll_flow_meter(duration_s)`: Counts pulses from the flow sensor over a given duration.
+- `read_dht_sensor(dht_device)`: Reads temperature and humidity from the DHT22.
+- `poll_wind_anemometer(duration_s)`: Counts wind pulses over a given duration.
+- `main()`: Sets up sensors, MQTT, and runs the main polling/publishing loop.
+
+Sensor Polling Intervals:
+- Flow, wind, and environment: every 1 second.
+- Plant/color: every 5 minutes (with 4 readings spaced 2 seconds apart).
+
+Sensor Libraries Used:
+- Flow/Wind: RPi.GPIO
+- Color: adafruit_tcs34725, adafruit_bitbangio, board
+- DHT22: adafruit_dht
+- MQTT: paho-mqtt
+
+Calibration Constants:
+- Flow: `FLOW_PULSES_PER_LITRE = 450` (can be changed in the script)
+- Wind: 20 pulses = 1 rotation = 1.75 m/s (hardcoded in wind speed calculation)
+- To override, edit these constants at the top of the script.
+
+MQTT Error Handling
+-------------------
+- MQTT connection is attempted at startup; if it fails, the script prints an error and exits.
+- Publishing errors are caught and logged with `[ERROR]` and a timestamp.
+- There is no explicit backoff/retry strategy for reconnecting to the broker; if the connection drops after startup, the script will not attempt to reconnect unless restarted.
+
+Sensor Data Validation
+----------------------
+- No explicit outlier filtering or sanity checks are performed before publishing.
+- If a sensor read fails (e.g., DHT22), the payload is omitted for that cycle or set to `None` (e.g., `pressure_kpa: None`).
+- Failed DHT22 reads result in a warning and no environment data is published for that second.
+- Plant data uses averaged values; if a color reading fails, it may cause an exception (not explicitly handled).
+
+Systemd Service File
+--------------------
+- No `.service` file is present in the repo.
+- Example service file is shown in the documentation, but not included as a file.
+- No special `ExecStartPre` or `RestartSec` settings are mentioned in the code or found in the workspace.
+
+Firmware/Hardware Versioning
+----------------------------
+- There is no code to report the Pi Zero’s software version or hardware revision in MQTT payloads.
+- To add this, you could include a version string or hardware info in each payload or as a separate MQTT topic.
+
+If you want to add any of these features (e.g., version reporting, outlier filtering, or a systemd service file), let me know and I can help you implement them!
+
+# MQTT Topic JSON Schemas (Shared Reference)
+
+## sensors/sets
+```json
+{
+  "timestamp": "2025-06-15T12:00:00.000000",
+  "flow_pulses": 12,                // integer or null
+  "flow_litres": 0.026,              // float or null
+  "pressure_kpa": null,              // float or null (optional, may be null)
+  "version": "1.0.0"                // string (software version)
+}
+```
+
+## sensors/environment
+```json
+{
+  "timestamp": "2025-06-15T12:00:00.000000",
+  "temperature": 23.5,               // float or null
+  "humidity": 45.2,                  // float or null
+  "wind_speed": 2.1,                 // float or null
+  "barometric_pressure": null,       // float or null (optional, may be null)
+  "version": "1.0.0"                // string (software version)
+}
+```
+
+## sensors/plant
+```json
+{
+  "timestamp": "2025-06-15T12:00:00.000000",
+  "moisture": 120,                   // float or null (average blue channel)
+  "lux": 350.5,                      // float or null
+  "soil_temperature": null,          // float or null (optional, may be null)
+  "version": "1.0.0"                // string (software version)
+}
+```
+
+# Notes
+- All fields are required unless marked optional.
+- Null values indicate missing or invalid sensor data for that cycle.
+- The `version` field is included for diagnostics and should be updated with each software release.
+- Timestamps are in ISO 8601 format with microseconds.
+- Extend schemas as needed for new sensors or fields, and update all clients accordingly.
+
+# Usage
+- All components (Sensor Pi, Sprinkler Controller, WPF client) should use these schemas for serialization/deserialization.
+- Update this reference if any schema changes are made.
