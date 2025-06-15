@@ -1,0 +1,4 @@
+#!/bin/bash
+echo "Starting colorsensor.service..."
+sudo systemctl start colorsensor.service
+echo "Service started."
