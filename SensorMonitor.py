@@ -96,8 +96,11 @@ def poll_wind_anemometer(duration_s):
     return pulse_count
 
 def main():
+    print("[DEBUG] Starting SensorMonitor main loop...")
     sensor = init_color_sensor()
+    print("[DEBUG] Color sensor initialized.")
     dht_device = adafruit_dht.DHT22(DHT_PIN)
+    print("[DEBUG] DHT22 sensor initialized.")
     last_color_time = time.time()
     last_dht_time = 0
     color_readings = []
@@ -108,10 +111,17 @@ def main():
     mqtt_broker = "100.116.147.6"  # MQTT broker/controller Pi IP address
     mqtt_port = 1883
     mqtt_client = mqtt.Client()
-    mqtt_client.connect(mqtt_broker, mqtt_port, 60)
+    print(f"[DEBUG] Connecting to MQTT broker {mqtt_broker}:{mqtt_port} ...")
+    try:
+        mqtt_client.connect(mqtt_broker, mqtt_port, 60)
+        print("[DEBUG] MQTT connected successfully.")
+    except Exception as e:
+        print(f"[ERROR] MQTT connection failed: {e}")
+        return
 
     try:
         while True:
+            print("[DEBUG] --- New main loop iteration ---")
             # --- Sets (flow and pressure) reporting every second ---
             flow_pulse_count, flow_litres = poll_flow_meter(1.0)
             flow_timestamp = datetime.now().isoformat()
@@ -122,18 +132,22 @@ def main():
                 "flow_litres": flow_litres,
                 "pressure_kpa": pressure_kpa
             }
-            print(f"Sets: {sets_data}")
+            print(f"[DEBUG] Sets data: {sets_data}")
             try:
                 mqtt_client.publish("sensors/sets", json.dumps(sets_data))
+                print("[DEBUG] Published sets data to sensors/sets")
             except Exception as e:
-                print(f"Failed to publish sets data: {e}")
+                print(f"[ERROR] Failed to publish sets data: {e}")
 
             # --- Wind speed polling every second ---
             wind_pulse_count = poll_wind_anemometer(1.0)
+            print(f"[DEBUG] Wind pulse count: {wind_pulse_count}")
             # Calibration: 20 pulses = 1 rotation = 1.75 m/s
             wind_speed = (wind_pulse_count / 20) * 1.75
+            print(f"[DEBUG] Wind speed: {wind_speed} m/s")
 
             # --- Environment (temperature, humidity, wind, barometric pressure) reporting every second ---
+            print("[DEBUG] Reading DHT22 sensor...")
             dht_data = read_dht_sensor(dht_device)
             barometric_pressure = None
             if dht_data:
@@ -144,23 +158,24 @@ def main():
                     "wind_speed": wind_speed,
                     "barometric_pressure": barometric_pressure
                 }
-                print(f"Environment: {environment_data}")
+                print(f"[DEBUG] Environment data: {environment_data}")
                 try:
                     mqtt_client.publish("sensors/environment", json.dumps(environment_data))
+                    print("[DEBUG] Published environment data to sensors/environment")
                 except Exception as e:
-                    print(f"Failed to publish environment data: {e}")
+                    print(f"[ERROR] Failed to publish environment data: {e}")
             else:
-                print("DHT22: No valid reading this second.")
+                print("[WARN] DHT22: No valid reading this second.")
 
             # --- Plant (moisture, soil temperature) reporting every 5 minutes ---
             now = time.time()
             if now - last_color_time >= GROUP_INTERVAL * 60:
-                print("--- Starting new plant group ---")
+                print("[DEBUG] --- Starting new plant group ---")
                 color_readings = []
                 for i in range(NUM_COLOR_READINGS):
                     data = read_color(sensor)
                     color_readings.append(data)
-                    print(f"Color reading {i+1}: {data}")
+                    print(f"[DEBUG] Color reading {i+1}: {data}")
                     if i < NUM_COLOR_READINGS - 1:
                         time.sleep(COLOR_READ_SPACING)
                 avg_b = sum(d['b'] for d in color_readings) / NUM_COLOR_READINGS
@@ -173,19 +188,20 @@ def main():
                     "lux": avg_lux,
                     "soil_temperature": soil_temperature
                 }
-                print(f"Plant: {plant_data}")
+                print(f"[DEBUG] Plant data: {plant_data}")
                 try:
                     mqtt_client.publish("sensors/plant", json.dumps(plant_data))
+                    print("[DEBUG] Published plant data to sensors/plant")
                 except Exception as e:
-                    print(f"Failed to publish plant data: {e}")
+                    print(f"[ERROR] Failed to publish plant data: {e}")
                 last_color_time = now
     except KeyboardInterrupt:
-        print("Exiting...")
+        print("[INFO] Exiting...")
     finally:
         GPIO.output(LED_PIN, GPIO.LOW)
         GPIO.cleanup()
         mqtt_client.disconnect()
-        print("GPIO cleaned up and MQTT disconnected.")
+        print("[INFO] GPIO cleaned up and MQTT disconnected.")
 
 if __name__ == "__main__":
     main()
