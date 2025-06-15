@@ -61,3 +61,50 @@ Firmware/Hardware Versioning
 - To add this, you could include a version string or hardware info in each payload or as a separate MQTT topic.
 
 If you want to add any of these features (e.g., version reporting, outlier filtering, or a systemd service file), let me know and I can help you implement them!
+
+# MQTT Topic JSON Schemas (Shared Reference)
+
+## sensors/sets
+```json
+{
+  "timestamp": "2025-06-15T12:00:00.000000",
+  "flow_pulses": 12,                // integer or null
+  "flow_litres": 0.026,              // float or null
+  "pressure_kpa": null,              // float or null (optional, may be null)
+  "version": "1.0.0"                // string (software version)
+}
+```
+
+## sensors/environment
+```json
+{
+  "timestamp": "2025-06-15T12:00:00.000000",
+  "temperature": 23.5,               // float or null
+  "humidity": 45.2,                  // float or null
+  "wind_speed": 2.1,                 // float or null
+  "barometric_pressure": null,       // float or null (optional, may be null)
+  "version": "1.0.0"                // string (software version)
+}
+```
+
+## sensors/plant
+```json
+{
+  "timestamp": "2025-06-15T12:00:00.000000",
+  "moisture": 120,                   // float or null (average blue channel)
+  "lux": 350.5,                      // float or null
+  "soil_temperature": null,          // float or null (optional, may be null)
+  "version": "1.0.0"                // string (software version)
+}
+```
+
+# Notes
+- All fields are required unless marked optional.
+- Null values indicate missing or invalid sensor data for that cycle.
+- The `version` field is included for diagnostics and should be updated with each software release.
+- Timestamps are in ISO 8601 format with microseconds.
+- Extend schemas as needed for new sensors or fields, and update all clients accordingly.
+
+# Usage
+- All components (Sensor Pi, Sprinkler Controller, WPF client) should use these schemas for serialization/deserialization.
+- Update this reference if any schema changes are made.
