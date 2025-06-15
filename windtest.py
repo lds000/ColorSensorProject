@@ -2,7 +2,7 @@ import RPi.GPIO as GPIO
 import time
 
 # GPIO pin connected to the wind speed transmitter's pulse output (blue wire)
-PULSE_PIN = 5  # Change this to your actual wiring
+PULSE_PIN = 13  # Change this to your actual wiring
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(PULSE_PIN, GPIO.IN)
