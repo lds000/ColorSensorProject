@@ -9,6 +9,10 @@ import adafruit_dht
 import paho.mqtt.client as mqtt
 import json
 import os
+import board
+import busio
+import adafruit_ads1x15.ads1115 as ADS
+from adafruit_ads1x15.analog_in import AnalogIn
 
 # --- CONFIG ---
 FLOW_SENSOR_PIN = 25  # BCM numbering
@@ -127,6 +131,15 @@ def main():
     print("[DEBUG] Color sensor initialized.")
     dht_device = adafruit_dht.DHT22(DHT_PIN)
     print("[DEBUG] DHT22 sensor initialized.")
+    # --- ADS1115 Pressure Sensor Setup ---
+    try:
+        i2c = busio.I2C(board.SCL, board.SDA)
+        ads = ADS.ADS1115(i2c)
+        pressure_chan = AnalogIn(ads, ADS.P0)  # Channel 0 for pressure sensor
+        print("[DEBUG] ADS1115 initialized for pressure sensor.")
+    except Exception as e:
+        log_error(f"ADS1115 init error: {e}")
+        pressure_chan = None
     last_color_time = time.time()
     last_dht_time = 0
     color_readings = []
@@ -159,11 +172,27 @@ def main():
                 log_error(f"Flow reading out of range: pulses={flow_pulse_count}, litres={flow_litres}")
                 flow_pulse_count, flow_litres = None, None
             flow_timestamp = datetime.now().isoformat()
+            # --- Pressure sensor read (ADS1115) ---
+            pressure_psi = None
             pressure_kpa = None
+            if pressure_chan is not None:
+                try:
+                    pressure_voltage = pressure_chan.voltage
+                    if pressure_voltage is not None:
+                        # 0.5V = 0 PSI, 4.5V = 100 PSI
+                        pressure_psi = (pressure_voltage - 0.5) * (100 / (4.5 - 0.5))
+                        pressure_psi = max(0, min(pressure_psi, 100))
+                        pressure_kpa = pressure_psi * 6.89476
+                        print(f"[DEBUG] Pressure: {pressure_voltage:.3f} V, {pressure_psi:.2f} PSI, {pressure_kpa:.2f} kPa")
+                    else:
+                        log_error("Pressure sensor voltage read as None.")
+                except Exception as e:
+                    log_error(f"Pressure sensor read error: {e}")
             sets_data = {
                 "timestamp": flow_timestamp,
                 "flow_pulses": flow_pulse_count,
                 "flow_litres": flow_litres,
+                "pressure_psi": pressure_psi,
                 "pressure_kpa": pressure_kpa,
                 "version": SOFTWARE_VERSION
             }
