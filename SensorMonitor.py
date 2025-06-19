@@ -108,8 +108,18 @@ def log_error(msg):
     log_entry = f"[{timestamp}] {msg}\n"
     print(log_entry.strip())
     try:
-        with open(ERROR_LOG_FILE, "a") as f:
-            f.write(log_entry)
+        # Read existing lines (if file exists)
+        if os.path.exists(ERROR_LOG_FILE):
+            with open(ERROR_LOG_FILE, "r") as f:
+                lines = f.readlines()
+        else:
+            lines = []
+        # Append new entry
+        lines.append(log_entry)
+        # Keep only the last 100 lines
+        lines = lines[-100:]
+        with open(ERROR_LOG_FILE, "w") as f:
+            f.writelines(lines)
     except Exception as e:
         print(f"[FATAL] Could not write to error log: {e}")
 
@@ -224,6 +234,9 @@ def main():
                 log_error(f"Failed to publish sets data: {e}")
             # --- Environment (temperature, humidity, wind, barometric pressure) reporting every second ---
             dht_data = read_dht_sensor(dht_device)
+            # --- Wind speed calculation ---
+            wind_pulses = poll_wind_anemometer(1.0)
+            wind_speed = (wind_pulses / 20) * 1.75  # m/s, adjust formula if needed
             barometric_pressure = None
             if dht_data:
                 temp = dht_data.get("temperature")
