@@ -125,6 +125,21 @@ def is_sane_temp(temp):
 def is_sane_humidity(hum):
     return hum is not None and 0.0 <= hum <= 100.0
 
+def calculate_flow_rate(flow_litres, duration_s):
+    """
+    Calculate the flow rate in liters per minute.
+
+    Args:
+        flow_litres (float): The amount of water in liters measured during the duration.
+        duration_s (float): The duration in seconds over which the flow was measured.
+
+    Returns:
+        float: The flow rate in liters per minute.
+    """
+    if duration_s > 0:
+        return (flow_litres / duration_s) * 60
+    return 0
+
 def main():
     print(f"[DEBUG] Starting SensorMonitor main loop... (version {SOFTWARE_VERSION})")
     sensor = init_color_sensor()
@@ -145,10 +160,6 @@ def main():
     color_readings = []
     set_names = ["Set1", "Set2", "Set3"]  # Replace with your actual set names
     set_cycle_interval = 10  # seconds per set (for demo logic)
-    # --- Pressure averaging setup ---
-    pressure_samples = []
-    pressure_avg_interval = 5 * 60  # 5 minutes in seconds
-    last_pressure_avg_time = time.time()
 
     # MQTT setup with reconnect/backoff
     mqtt_broker = "100.116.147.6"
@@ -175,11 +186,14 @@ def main():
             if not is_sane_flow(flow_pulse_count, flow_litres):
                 log_error(f"Flow reading out of range: pulses={flow_pulse_count}, litres={flow_litres}")
                 flow_pulse_count, flow_litres = None, None
+                flow_rate_lpm = None
+            else:
+                flow_rate_lpm = calculate_flow_rate(flow_litres, 1.0)  # 1 second duration
+
             flow_timestamp = datetime.now().isoformat()
             # --- Pressure sensor read (ADS1115) ---
             pressure_psi = None
             pressure_kpa = None
-            raw_pressure_ok = False
             if pressure_chan is not None:
                 try:
                     pressure_voltage = pressure_chan.voltage
@@ -189,37 +203,25 @@ def main():
                         pressure_psi = max(0, min(pressure_psi, 100))
                         pressure_kpa = pressure_psi * 6.89476
                         print(f"[DEBUG] Pressure: {pressure_voltage:.3f} V, {pressure_psi:.2f} PSI, {pressure_kpa:.2f} kPa")
-                        raw_pressure_ok = True
                     else:
                         log_error("Pressure sensor voltage read as None.")
                 except Exception as e:
                     log_error(f"Pressure sensor read error: {e}")
-            # --- Collect raw pressure readings for averaging ---
-            if raw_pressure_ok and pressure_psi is not None:
-                pressure_samples.append(pressure_psi)
-            # --- Publish 5-minute average to sensors/pressure_avg ---
-            now = time.time()
-            if now - last_pressure_avg_time >= pressure_avg_interval and pressure_samples:
-                avg_pressure = sum(pressure_samples) / len(pressure_samples)
-                avg_payload = {
-                    "timestamp": datetime.now().isoformat(),
-                    "avg_pressure_psi": avg_pressure,
-                    "num_samples": len(pressure_samples),
-                    "version": SOFTWARE_VERSION
-                }
-                try:
-                    mqtt_client.publish("sensors/pressure_avg", json.dumps(avg_payload))
-                    print(f"[DEBUG] Published pressure average to sensors/pressure_avg: {avg_payload}")
-                except Exception as e:
-                    log_error(f"Failed to publish pressure average: {e}")
-                pressure_samples = []
-                last_pressure_avg_time = now
-            # --- Wind speed polling every second ---
-            wind_pulse_count = poll_wind_anemometer(1.0)
-            wind_speed = (wind_pulse_count / 20) * 1.75
-            if not is_sane_wind(wind_speed):
-                log_error(f"Wind speed out of range: {wind_speed} m/s")
-                wind_speed = None
+            sets_data = {
+                "timestamp": flow_timestamp,
+                "flow_pulses": flow_pulse_count,
+                "flow_litres": flow_litres,
+                "flow_rate_lpm": flow_rate_lpm,
+                "pressure_psi": pressure_psi,
+                "pressure_kpa": pressure_kpa,
+                "version": SOFTWARE_VERSION
+            }
+            print(f"[DEBUG] Sets data: {sets_data}")
+            try:
+                mqtt_client.publish("sensors/sets", json.dumps(sets_data))
+                print("[DEBUG] Published sets data to sensors/sets")
+            except Exception as e:
+                log_error(f"Failed to publish sets data: {e}")
             # --- Environment (temperature, humidity, wind, barometric pressure) reporting every second ---
             dht_data = read_dht_sensor(dht_device)
             barometric_pressure = None
