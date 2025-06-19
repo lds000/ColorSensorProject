@@ -1,0 +1,14 @@
+[Unit]
+Description=MQTT Error Reporter Service
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/lds00/ColorSensorTest
+ExecStart=/usr/bin/python3 /home/lds00/ColorSensorTest/error_reporter.py
+Restart=always
+RestartSec=5
+User=lds00
+
+[Install]
+WantedBy=multi-user.target
