@@ -152,6 +152,22 @@ def calculate_flow_rate(flow_litres, duration_s):
         return (flow_litres / duration_s) * 60
     return 0
 
+def trim_stdout_log(max_lines=1000):
+    """
+    Trims stdout_log.txt to the last max_lines lines.
+    """
+    log_file = "stdout_log.txt"
+    if not os.path.exists(log_file):
+        return
+    try:
+        with open(log_file, "r") as f:
+            lines = f.readlines()
+        if len(lines) > max_lines:
+            with open(log_file, "w") as f:
+                f.writelines(lines[-max_lines:])
+    except Exception as e:
+        log_error(f"Failed to trim stdout_log.txt: {e}")
+
 def main():
     print(f"[DEBUG] Starting SensorMonitor main loop... (version {SOFTWARE_VERSION})")
     sensor = init_color_sensor()
@@ -314,6 +330,8 @@ def main():
                 except Exception as e:
                     log_error(f"Failed to publish plant data: {e}")
                 last_color_time = now
+            # --- Trim stdout_log.txt to 1000 lines ---
+            trim_stdout_log(1000)
     except KeyboardInterrupt:
         print("[INFO] Exiting...")
     finally:
