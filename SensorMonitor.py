@@ -188,7 +188,9 @@ def main():
     color_readings = []
     set_names = ["Set1", "Set2", "Set3"]  # Replace with your actual set names
     set_cycle_interval = 10  # seconds per set (for demo logic)
-
+    # --- Initialize pressure averaging variables ---
+    pressure_readings = []
+    last_pressure_avg_time = time.time()
     # MQTT setup with reconnect/backoff
     mqtt_broker = "100.116.147.6"
     mqtt_port = 1883
