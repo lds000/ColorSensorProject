@@ -26,6 +26,8 @@ WIND_SENSOR_PIN = 13  # BCM numbering for wind anemometer (using blue wire)
 
 ERROR_LOG_FILE = "error_log.txt"
 SOFTWARE_VERSION = "1.0.0"
+AVG_PRESSURE_LOG_FILE = "avg_pressure_log.txt"
+AVG_PRESSURE_INTERVAL = 300  # 5 minutes in seconds
 
 # --- SETUP ---
 GPIO.setmode(GPIO.BCM)
@@ -213,10 +215,25 @@ def main():
                         pressure_psi = max(0, min(pressure_psi, 100))
                         pressure_kpa = pressure_psi * 6.89476
                         print(f"[DEBUG] Pressure: {pressure_voltage:.3f} V, {pressure_psi:.2f} PSI, {pressure_kpa:.2f} kPa")
+                        # --- Collect for 5-min average ---
+                        pressure_readings.append(pressure_psi)
                     else:
                         log_error("Pressure sensor voltage read as None.")
                 except Exception as e:
                     log_error(f"Pressure sensor read error: {e}")
+            # --- Log 5-min average pressure ---
+            now_time = time.time()
+            if now_time - last_pressure_avg_time >= AVG_PRESSURE_INTERVAL and pressure_readings:
+                avg_psi = sum(pressure_readings) / len(pressure_readings)
+                avg_timestamp = datetime.now().isoformat()
+                try:
+                    with open(AVG_PRESSURE_LOG_FILE, "a") as f:
+                        f.write(f"{avg_timestamp}, avg_psi={avg_psi:.2f}, samples={len(pressure_readings)}\n")
+                    print(f"[DEBUG] Logged 5-min avg PSI: {avg_psi:.2f} over {len(pressure_readings)} samples")
+                except Exception as e:
+                    log_error(f"Failed to write avg pressure log: {e}")
+                pressure_readings.clear()
+                last_pressure_avg_time = now_time
             sets_data = {
                 "timestamp": flow_timestamp,
                 "flow_pulses": flow_pulse_count,
