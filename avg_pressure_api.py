@@ -12,8 +12,8 @@ def get_recent_avg_pressures():
     Query param: n (default 5)
     """
     n = request.args.get("n", default=5, type=int)
-    if n < 1 or n > 100:
-        return jsonify({"error": "n must be between 1 and 100"}), 400
+    if n < 1 or n > 500:
+        return jsonify({"error": "n must be between 1 and 500"}), 400
     if not os.path.exists(AVG_PRESSURE_LOG_FILE):
         return jsonify([])
     try:
