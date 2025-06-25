@@ -22,6 +22,28 @@ Wiring:
 Press Ctrl+C to stop.
 """
 
+# Compass labels for 8 main directions
+COMPASS_LABELS = [
+    "N", "NE", "E", "SE", "S", "SW", "W", "NW", "N"
+]
+
+def voltage_to_degrees(voltage):
+    """
+    Convert voltage (1-5V) to wind direction in degrees (0-360).
+    """
+    if voltage < 1.0:
+        return 0.0
+    if voltage > 5.0:
+        voltage = 5.0
+    return (voltage - 1.0) * (360.0 / 4.0)
+
+def degrees_to_compass(degrees):
+    """
+    Convert degrees (0-360) to compass label (N, NE, E, etc.).
+    """
+    idx = int((degrees + 22.5) // 45)
+    return COMPASS_LABELS[idx]
+
 def main():
     print("Wind direction ADC test started. Press Ctrl+C to stop.")
     try:
@@ -31,7 +53,9 @@ def main():
         while True:
             voltage = chan.voltage
             raw = chan.value
-            print(f"A1 voltage: {voltage:.4f} V, raw ADC: {raw}")
+            direction_deg = voltage_to_degrees(voltage)
+            compass = degrees_to_compass(direction_deg)
+            print(f"A1 voltage: {voltage:.4f} V, raw ADC: {raw}, direction: {direction_deg:.1f}° ({compass})")
             time.sleep(1)
     except KeyboardInterrupt:
         print("\nTest stopped by user.")
