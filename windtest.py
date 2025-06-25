@@ -29,8 +29,9 @@ if __name__ == "__main__":
             duration = 1.0  # seconds
             pulses = poll_wind_anemometer(duration)
             # 20 pulses = 1 rotation = 1.75 m/s
-            wind_speed = (pulses / 20) * 1.75  # m/s
-            print(f"Pulses: {pulses}, Wind speed: {wind_speed:.2f} m/s")
+            wind_speed_mps = (pulses / 20) * 1.75  # m/s
+            wind_speed_mph = wind_speed_mps * 2.23694  # 1 m/s = 2.23694 mph
+            print(f"Pulses: {pulses}, Wind speed: {wind_speed_mph:.2f} mph ({wind_speed_mps:.2f} m/s)")
     except KeyboardInterrupt:
         print("\nTest stopped by user.")
     finally:
