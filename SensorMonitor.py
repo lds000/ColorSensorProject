@@ -168,6 +168,36 @@ def trim_stdout_log(max_lines=1000):
     except Exception as e:
         log_error(f"Failed to trim stdout_log.txt: {e}")
 
+# --- Wind direction calibration constants (from wind_direction_test.py) ---
+CAL_N_RAW = 14350  # North
+CAL_E_RAW = 21755  # East
+COMPASS_LABELS = [
+    "N", "NE", "E", "SE", "S", "SW", "W", "NW", "N"
+]
+
+def raw_to_degrees(raw):
+    """
+    Map raw ADC value to degrees using calibration points.
+    14350 (N) -> 0°, 21755 (E) -> 90°, wraps for other directions.
+    """
+    if raw < CAL_N_RAW:
+        deg = 270 + (raw / (CAL_N_RAW - 655)) * 90
+        if deg > 360:
+            deg -= 360
+        return deg
+    elif raw <= CAL_E_RAW:
+        deg = (raw - CAL_N_RAW) * 90 / (CAL_E_RAW - CAL_N_RAW)
+        return max(0, deg)
+    else:
+        deg = 90 + (raw - CAL_E_RAW) * 270 / (32767 - CAL_E_RAW)
+        if deg > 360:
+            deg -= 360
+        return deg
+
+def degrees_to_compass(degrees):
+    idx = int((degrees + 22.5) // 45)
+    return COMPASS_LABELS[idx]
+
 def main():
     print(f"[DEBUG] Starting SensorMonitor main loop... (version {SOFTWARE_VERSION})")
     sensor = init_color_sensor()
@@ -273,6 +303,17 @@ def main():
             # --- Wind speed calculation ---
             wind_pulses = poll_wind_anemometer(1.0)
             wind_speed = (wind_pulses / 20) * 1.75  # m/s, adjust formula if needed
+            # --- Wind direction read (ADC A1) ---
+            wind_direction_deg = None
+            wind_direction_compass = None
+            try:
+                wind_dir_chan = AnalogIn(ads, ADS.P1)  # Channel 1 (A1)
+                wind_dir_raw = wind_dir_chan.value
+                wind_direction_deg = raw_to_degrees(wind_dir_raw)
+                wind_direction_compass = degrees_to_compass(wind_direction_deg)
+                print(f"[DEBUG] Wind direction: raw={wind_dir_raw}, {wind_direction_deg:.1f}° ({wind_direction_compass})")
+            except Exception as e:
+                log_error(f"Wind direction read error: {e}")
             barometric_pressure = None
             if dht_data:
                 temp = dht_data.get("temperature")
@@ -288,6 +329,8 @@ def main():
                     "temperature": temp,
                     "humidity": hum,
                     "wind_speed": wind_speed,
+                    "wind_direction_deg": wind_direction_deg,
+                    "wind_direction_compass": wind_direction_compass,
                     "barometric_pressure": barometric_pressure,
                     "version": SOFTWARE_VERSION
                 }
