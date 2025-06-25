@@ -27,6 +27,21 @@ COMPASS_LABELS = [
     "N", "NE", "E", "SE", "S", "SW", "W", "NW", "N"
 ]
 
+# --- Calibration for raw ADC values ---
+# User-provided calibration:
+#   West-to-East (E): raw = 21755
+#   South-to-North (N): raw = 14350
+# We'll map 14350 -> 0° (N), 21755 -> 90° (E), and interpolate linearly.
+# Full circle assumed to be 0-32767 (ADS1115 default range)
+
+CAL_N_RAW = 14350  # North
+CAL_E_RAW = 21755  # East
+RAW_MIN = 14350    # Calibrated min (N)
+RAW_MAX = 21755    # Calibrated max (E)
+
+# For 8-point compass, we need to extrapolate for S and W as well.
+# We'll assume the sensor is linear and wraps around.
+
 def voltage_to_degrees(voltage):
     """
     Convert voltage (1-5V) to wind direction in degrees (0-360).
@@ -44,6 +59,37 @@ def degrees_to_compass(degrees):
     idx = int((degrees + 22.5) // 45)
     return COMPASS_LABELS[idx]
 
+def raw_to_degrees(raw):
+    """
+    Map raw ADC value to degrees using calibration points.
+    14350 (N) -> 0°, 21755 (E) -> 90°, 29160 (S) -> 180°, 655 (W) -> 270°
+    """
+    # Calculate scale per degree between N and E
+    if raw < CAL_N_RAW:
+        # Wrap around for W (raw < N)
+        # W is at 270°, so interpolate backwards
+        # Assume 0 (or 32767) is W
+        # 14350 (N) -> 0°, 655 (W) -> 270°
+        # 655 is 270°; 14350 is 0°
+        # (14350 - 655) = 13695 raw units for 270°
+        deg = 270 + (raw / (CAL_N_RAW - 655)) * 90
+        if deg > 360:
+            deg -= 360
+        return deg
+    elif raw <= CAL_E_RAW:
+        # N to E
+        deg = (raw - CAL_N_RAW) * 90 / (CAL_E_RAW - CAL_N_RAW)
+        return max(0, deg)
+    else:
+        # E to S to W (wrap around)
+        # E (21755) -> 90°, S (29160) -> 180°, W (655) -> 270°
+        # We'll estimate S as midpoint between E and W
+        # 21755 (E) to 32767 (max) is 110°, then wrap to 0
+        deg = 90 + (raw - CAL_E_RAW) * 270 / (32767 - CAL_E_RAW)
+        if deg > 360:
+            deg -= 360
+        return deg
+
 def main():
     print("Wind direction ADC test started. Press Ctrl+C to stop.")
     try:
@@ -53,7 +99,7 @@ def main():
         while True:
             voltage = chan.voltage
             raw = chan.value
-            direction_deg = voltage_to_degrees(voltage)
+            direction_deg = raw_to_degrees(raw)
             compass = degrees_to_compass(direction_deg)
             print(f"A1 voltage: {voltage:.4f} V, raw ADC: {raw}, direction: {direction_deg:.1f}° ({compass})")
             time.sleep(1)
