@@ -268,8 +268,22 @@ def main():
                 flow_rate_lpm = calculate_flow_rate(flow_litres, 1.0)  # 1 second duration
                 # --- Collect for 5-min average flow ---
                 flow_litres_readings.append(flow_litres)
-
-            flow_timestamp = datetime.now().isoformat()
+            # --- Log 5-min average flow ---
+            now_time = time.time()
+            if now_time - last_flow_avg_time >= AVG_FLOW_INTERVAL:
+                if flow_litres_readings:
+                    avg_flow = sum(flow_litres_readings) / len(flow_litres_readings)
+                    avg_timestamp = datetime.now().isoformat()
+                    try:
+                        with open(AVG_FLOW_LOG_FILE, "a") as f:
+                            f.write(f"{avg_timestamp}, avg_flow={avg_flow:.4f}, samples={len(flow_litres_readings)}\n")
+                        print(f"[DEBUG] Logged 5-min avg flow: {avg_flow:.4f} L over {len(flow_litres_readings)} samples")
+                    except Exception as e:
+                        log_error(f"Failed to write avg flow log: {e}")
+                    flow_litres_readings.clear()
+                else:
+                    log_error("[FLOW AVG] No valid flow readings to average in last 5 minutes.")
+                last_flow_avg_time = now_time
             # --- Pressure sensor read (ADS1115) ---
             pressure_psi = None
             pressure_kpa = None
