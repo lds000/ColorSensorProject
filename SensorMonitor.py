@@ -257,6 +257,8 @@ def main():
 
     try:
         while True:
+            pressure_psi = None
+            pressure_kpa = None
             print("[DEBUG] --- New main loop iteration ---")
             # --- Sets (flow and pressure) reporting every second ---
             flow_pulse_count, flow_litres = poll_flow_meter(1.0)
@@ -301,8 +303,6 @@ def main():
                     log_error("[FLOW AVG] No valid flow readings to average in last 5 minutes.")
                 last_flow_avg_time = now_time
             # --- Pressure sensor read (ADS1115) ---
-            pressure_psi = None
-            pressure_kpa = None
             if pressure_chan is not None:
                 try:
                     pressure_voltage = pressure_chan.voltage
