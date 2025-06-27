@@ -260,6 +260,7 @@ def main():
             print("[DEBUG] --- New main loop iteration ---")
             # --- Sets (flow and pressure) reporting every second ---
             flow_pulse_count, flow_litres = poll_flow_meter(1.0)
+            flow_timestamp = datetime.now().isoformat()  # Ensure this is always defined before use
             if not is_sane_flow(flow_pulse_count, flow_litres):
                 log_error(f"Flow reading out of range: pulses={flow_pulse_count}, litres={flow_litres}")
                 flow_pulse_count, flow_litres = None, None
@@ -268,6 +269,21 @@ def main():
                 flow_rate_lpm = calculate_flow_rate(flow_litres, 1.0)  # 1 second duration
                 # --- Collect for 5-min average flow ---
                 flow_litres_readings.append(flow_litres)
+            sets_data = {
+                "timestamp": flow_timestamp,
+                "flow_pulses": flow_pulse_count,
+                "flow_litres": flow_litres,
+                "flow_rate_lpm": flow_rate_lpm,
+                "pressure_psi": pressure_psi,
+                "pressure_kpa": pressure_kpa,
+                "version": SOFTWARE_VERSION
+            }
+            print(f"[DEBUG] Sets data: {sets_data}")
+            try:
+                mqtt_client.publish("sensors/sets", json.dumps(sets_data))
+                print("[DEBUG] Published sets data to sensors/sets")
+            except Exception as e:
+                log_error(f"Failed to publish sets data: {e}")
             # --- Log 5-min average flow ---
             now_time = time.time()
             if now_time - last_flow_avg_time >= AVG_FLOW_INTERVAL:
