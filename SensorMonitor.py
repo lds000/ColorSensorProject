@@ -30,6 +30,10 @@ AVG_PRESSURE_LOG_FILE = "avg_pressure_log.txt"
 AVG_PRESSURE_INTERVAL = 300  # 5 minutes in seconds
 AVG_WIND_LOG_FILE = "avg_wind_log.txt"
 AVG_WIND_INTERVAL = 300  # 5 minutes in seconds
+AVG_TEMPERATURE_LOG_FILE = "avg_temperature_log.txt"
+AVG_TEMPERATURE_INTERVAL = 300  # 5 minutes in seconds
+AVG_FLOW_LOG_FILE = "avg_flow_log.txt"
+AVG_FLOW_INTERVAL = 300  # 5 minutes in seconds
 
 # --- SETUP ---
 GPIO.setmode(GPIO.BCM)
@@ -227,6 +231,13 @@ def main():
     global wind_speed_readings, last_wind_avg_time
     wind_speed_readings = []
     last_wind_avg_time = time.time()
+    # --- Add temperature and flow averaging variables ---
+    global temperature_readings, last_temperature_avg_time
+    temperature_readings = []
+    last_temperature_avg_time = time.time()
+    global flow_litres_readings, last_flow_avg_time
+    flow_litres_readings = []
+    last_flow_avg_time = time.time()
     # MQTT setup with reconnect/backoff
     mqtt_broker = "100.116.147.6"
     mqtt_port = 1883
@@ -255,6 +266,8 @@ def main():
                 flow_rate_lpm = None
             else:
                 flow_rate_lpm = calculate_flow_rate(flow_litres, 1.0)  # 1 second duration
+                # --- Collect for 5-min average flow ---
+                flow_litres_readings.append(flow_litres)
 
             flow_timestamp = datetime.now().isoformat()
             # --- Pressure sensor read (ADS1115) ---
@@ -340,6 +353,22 @@ def main():
                 if not is_sane_temp(temp):
                     log_error(f"Temperature out of range: {temp}")
                     temp = None
+                else:
+                    # --- Collect for 5-min average temperature ---
+                    temperature_readings.append(temp)
+                # --- Log 5-min average temperature ---
+                now_time = time.time()
+                if now_time - last_temperature_avg_time >= AVG_TEMPERATURE_INTERVAL and temperature_readings:
+                    avg_temp = sum(temperature_readings) / len(temperature_readings)
+                    avg_timestamp = datetime.now().isoformat()
+                    try:
+                        with open(AVG_TEMPERATURE_LOG_FILE, "a") as f:
+                            f.write(f"{avg_timestamp}, avg_temp={avg_temp:.2f}, samples={len(temperature_readings)}\n")
+                        print(f"[DEBUG] Logged 5-min avg temperature: {avg_temp:.2f} C over {len(temperature_readings)} samples")
+                    except Exception as e:
+                        log_error(f"Failed to write avg temperature log: {e}")
+                    temperature_readings.clear()
+                    last_temperature_avg_time = now_time
                 if not is_sane_humidity(hum):
                     log_error(f"Humidity out of range: {hum}")
                     hum = None
