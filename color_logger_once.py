@@ -205,13 +205,25 @@ def calculate_wetness_percent(b, calibration=None):
     return result
 
 UNSENT_QUEUE_FILE = "unsent_queue.jsonl"
+MAX_UNSENT_QUEUE_LINES = 1000
 
 # ---------- QUEUE UNSENT PAYLOAD ----------
+def trim_unsent_queue():
+    try:
+        with open(UNSENT_QUEUE_FILE, "r") as f:
+            lines = f.readlines()
+        if len(lines) > MAX_UNSENT_QUEUE_LINES:
+            with open(UNSENT_QUEUE_FILE, "w") as f:
+                f.writelines(lines[-MAX_UNSENT_QUEUE_LINES:])
+    except Exception as e:
+        log_error(f"Failed to trim unsent_queue.jsonl: {e}")
+
 def queue_unsent_payload(payload):
     """Queue a payload for later resend if POST fails."""
     try:
         with open(UNSENT_QUEUE_FILE, "a") as f:
             f.write(json.dumps(payload) + "\n")
+        trim_unsent_queue()
         log_error("Payload queued for resend later.")
     except Exception as e:
         log_error(f"Failed to queue payload: {e}")

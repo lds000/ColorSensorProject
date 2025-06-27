@@ -28,6 +28,8 @@ ERROR_LOG_FILE = "error_log.txt"
 SOFTWARE_VERSION = "1.0.0"
 AVG_PRESSURE_LOG_FILE = "avg_pressure_log.txt"
 AVG_PRESSURE_INTERVAL = 300  # 5 minutes in seconds
+AVG_WIND_LOG_FILE = "avg_wind_log.txt"
+AVG_WIND_INTERVAL = 300  # 5 minutes in seconds
 
 # --- SETUP ---
 GPIO.setmode(GPIO.BCM)
@@ -218,10 +220,13 @@ def main():
     color_readings = []
     set_names = ["Set1", "Set2", "Set3"]  # Replace with your actual set names
     set_cycle_interval = 10  # seconds per set (for demo logic)
-    # --- Initialize pressure averaging variables at the top of main() ---
+    # --- Initialize pressure and wind averaging variables at the top of main() ---
     global pressure_readings, last_pressure_avg_time
     pressure_readings = []
     last_pressure_avg_time = time.time()
+    global wind_speed_readings, last_wind_avg_time
+    wind_speed_readings = []
+    last_wind_avg_time = time.time()
     # MQTT setup with reconnect/backoff
     mqtt_broker = "100.116.147.6"
     mqtt_port = 1883
@@ -303,6 +308,20 @@ def main():
             # --- Wind speed calculation ---
             wind_pulses = poll_wind_anemometer(1.0)
             wind_speed = (wind_pulses / 20) * 1.75  # m/s, adjust formula if needed
+            wind_speed_readings.append(wind_speed)
+            # --- Log 5-min average wind speed ---
+            now_time = time.time()
+            if now_time - last_wind_avg_time >= AVG_WIND_INTERVAL and wind_speed_readings:
+                avg_wind = sum(wind_speed_readings) / len(wind_speed_readings)
+                avg_timestamp = datetime.now().isoformat()
+                try:
+                    with open(AVG_WIND_LOG_FILE, "a") as f:
+                        f.write(f"{avg_timestamp}, avg_wind={avg_wind:.2f}, samples={len(wind_speed_readings)}\n")
+                    print(f"[DEBUG] Logged 5-min avg wind: {avg_wind:.2f} m/s over {len(wind_speed_readings)} samples")
+                except Exception as e:
+                    log_error(f"Failed to write avg wind log: {e}")
+                wind_speed_readings.clear()
+                last_wind_avg_time = now_time
             # --- Wind direction read (ADC A1) ---
             wind_direction_deg = None
             wind_direction_compass = None
