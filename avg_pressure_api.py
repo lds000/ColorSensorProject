@@ -5,6 +5,7 @@ AVG_PRESSURE_LOG_FILE = "avg_pressure_log.txt"
 AVG_WIND_LOG_FILE = "avg_wind_log.txt"
 AVG_FLOW_LOG_FILE = "avg_flow_log.txt"
 AVG_TEMPERATURE_LOG_FILE = "avg_temperature_log.txt"
+COLOR_LOG_FILE = "color_log.txt"
 
 app = Flask(__name__)
 
@@ -138,6 +139,50 @@ def get_recent_avg_temperature():
                     "timestamp": timestamp,
                     "avg_temp": avg_temp,
                     "samples": samples
+                })
+            except Exception as e:
+                continue  # skip malformed lines
+        return jsonify(results)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/moisture-avg-latest", methods=["GET"])
+def get_recent_color_moisture():
+    """
+    Returns the n most recent color/moisture readings from color_log.txt.
+    Query param: n (default 5)
+    Output: List of dicts with timestamp, R, G, B, Lux, Wetness
+    Skips AVG lines and malformed lines.
+    """
+    n = request.args.get("n", default=5, type=int)
+    if n < 1 or n > 500:
+        return jsonify({"error": "n must be between 1 and 500"}), 400
+    if not os.path.exists(COLOR_LOG_FILE):
+        return jsonify([])
+    try:
+        with open(COLOR_LOG_FILE, "r") as f:
+            lines = f.readlines()
+        # Only keep lines that look like a color/moisture reading (not AVG or INFO)
+        data_lines = [line.strip() for line in lines if line.strip() and not line.startswith("AVG") and not line.startswith("[INFO]")]
+        data_lines = data_lines[-n:]
+        results = []
+        for line in data_lines:
+            # Example: 2025-05-25T14:41:15.038663  R:8  G:20  B:18  Lux:78.40  Wetness:57.1%
+            try:
+                parts = line.split()
+                timestamp = parts[0]
+                r = int(parts[1].split(":")[1])
+                g = int(parts[2].split(":")[1])
+                b = int(parts[3].split(":")[1])
+                lux = float(parts[4].split(":")[1])
+                wetness = float(parts[5].split(":")[1].replace("%", ""))
+                results.append({
+                    "timestamp": timestamp,
+                    "R": r,
+                    "G": g,
+                    "B": b,
+                    "Lux": lux,
+                    "Wetness": wetness
                 })
             except Exception as e:
                 continue  # skip malformed lines
