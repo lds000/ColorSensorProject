@@ -151,7 +151,7 @@ def get_recent_color_moisture():
     """
     Returns the n most recent color/moisture readings from color_log.txt.
     Query param: n (default 5)
-    Output: List of dicts with timestamp, R, G, B, Lux, Wetness
+    Output: List of dicts with Timestamp (ISO8601) and Value (moisture as double)
     Skips AVG lines and malformed lines.
     """
     n = request.args.get("n", default=5, type=int)
@@ -171,18 +171,11 @@ def get_recent_color_moisture():
             try:
                 parts = line.split()
                 timestamp = parts[0]
-                r = int(parts[1].split(":")[1])
-                g = int(parts[2].split(":")[1])
-                b = int(parts[3].split(":")[1])
-                lux = float(parts[4].split(":")[1])
-                wetness = float(parts[5].split(":")[1].replace("%", ""))
+                # Use B value as the moisture proxy (as in get_color_reading)
+                b = float(parts[3].split(":")[1])
                 results.append({
-                    "timestamp": timestamp,
-                    "R": r,
-                    "G": g,
-                    "B": b,
-                    "Lux": lux,
-                    "Wetness": wetness
+                    "Timestamp": timestamp,
+                    "Value": b
                 })
             except Exception as e:
                 continue  # skip malformed lines
