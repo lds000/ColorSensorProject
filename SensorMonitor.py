@@ -35,6 +35,25 @@ AVG_TEMPERATURE_INTERVAL = 300  # 5 minutes in seconds
 AVG_FLOW_LOG_FILE = "avg_flow_log.txt"
 AVG_FLOW_INTERVAL = 300  # 5 minutes in seconds
 
+# --- LOAD CONFIG ---
+CONFIG_FILE = "config.json"
+def load_config():
+    try:
+        with open(CONFIG_FILE, "r") as f:
+            config = json.load(f)
+        return config
+    except Exception as e:
+        print(f"[FATAL] Could not load config.json: {e}")
+        return {}
+
+config = load_config()
+SENSOR_NAME = config.get("sensor_name", "UnknownSensor")
+ENABLE_FLOW_SENSOR = config.get("enable_flow_sensor", True)
+ENABLE_DHT22 = config.get("enable_dht22", True)
+ENABLE_PRESSURE_SENSOR = config.get("enable_pressure_sensor", True)
+ENABLE_WIND_SENSOR = config.get("enable_wind_sensor", True)
+ENABLE_COLOR_SENSOR = config.get("enable_color_sensor", True)
+
 # --- SETUP ---
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(LED_PIN, GPIO.OUT)
@@ -222,19 +241,35 @@ def degrees_to_compass(degrees):
 
 def main():
     print(f"[DEBUG] Starting SensorMonitor main loop... (version {SOFTWARE_VERSION})")
-    sensor = init_color_sensor()
-    print("[DEBUG] Color sensor initialized.")
-    dht_device = adafruit_dht.DHT22(DHT_PIN)
-    print("[DEBUG] DHT22 sensor initialized.")
+    # --- Sensor initialization based on config ---
+    sensor = None
+    if ENABLE_COLOR_SENSOR:
+        try:
+            sensor = init_color_sensor()
+            print("[DEBUG] Color sensor initialized.")
+        except Exception as e:
+            log_error(f"Color sensor init error: {e}")
+            sensor = None
+    dht_device = None
+    if ENABLE_DHT22:
+        try:
+            dht_device = adafruit_dht.DHT22(DHT_PIN)
+            print("[DEBUG] DHT22 sensor initialized.")
+        except Exception as e:
+            log_error(f"DHT22 init error: {e}")
+            dht_device = None
     # --- ADS1115 Pressure Sensor Setup ---
-    try:
-        i2c = busio.I2C(board.SCL, board.SDA)
-        ads = ADS.ADS1115(i2c)
-        pressure_chan = AnalogIn(ads, ADS.P0)  # Channel 0 for pressure sensor
-        print("[DEBUG] ADS1115 initialized for pressure sensor.")
-    except Exception as e:
-        log_error(f"ADS1115 init error: {e}")
-        pressure_chan = None
+    ads = None
+    pressure_chan = None
+    if ENABLE_PRESSURE_SENSOR:
+        try:
+            i2c = busio.I2C(board.SCL, board.SDA)
+            ads = ADS.ADS1115(i2c)
+            pressure_chan = AnalogIn(ads, ADS.P0)  # Channel 0 for pressure sensor
+            print("[DEBUG] ADS1115 initialized for pressure sensor.")
+        except Exception as e:
+            log_error(f"ADS1115 init error: {e}")
+            pressure_chan = None
     last_color_time = time.time()
     last_dht_time = 0
     color_readings = []
@@ -277,31 +312,32 @@ def main():
             pressure_kpa = None
             print("[DEBUG] --- New main loop iteration ---")
             # --- Sets (flow and pressure) reporting every second ---
-            flow_pulse_count, flow_litres = poll_flow_meter(1.0)
-            flow_timestamp = datetime.now().isoformat()  # Ensure this is always defined before use
-            if not is_sane_flow(flow_pulse_count, flow_litres):
-                log_error(f"Flow reading out of range: pulses={flow_pulse_count}, litres={flow_litres}")
-                flow_pulse_count, flow_litres = None, None
-                flow_rate_lpm = None
-            else:
-                flow_rate_lpm = calculate_flow_rate(flow_litres, 1.0)  # 1 second duration
-                # --- Collect for 5-min average flow ---
-                flow_litres_readings.append(flow_litres)
-            sets_data = {
-                "timestamp": flow_timestamp,
-                "flow_pulses": flow_pulse_count,
-                "flow_litres": flow_litres,
-                "flow_rate_lpm": flow_rate_lpm,
-                "pressure_psi": pressure_psi,
-                "pressure_kpa": pressure_kpa,
-                "version": SOFTWARE_VERSION
-            }
-            print(f"[DEBUG] Sets data: {sets_data}")
-            try:
-                mqtt_client.publish("sensors/sets", json.dumps(sets_data))
-                print("[DEBUG] Published sets data to sensors/sets")
-            except Exception as e:
-                log_error(f"Failed to publish sets data: {e}")
+            flow_pulse_count, flow_litres = None, None
+            flow_rate_lpm = None
+            flow_timestamp = datetime.now().isoformat()
+            if ENABLE_FLOW_SENSOR:
+                flow_pulse_count, flow_litres = poll_flow_meter(1.0)
+                if not is_sane_flow(flow_pulse_count, flow_litres):
+                    log_error(f"Flow reading out of range: pulses={flow_pulse_count}, litres={flow_litres}")
+                    flow_pulse_count, flow_litres = None, None
+                    flow_rate_lpm = None
+                else:
+                    flow_rate_lpm = calculate_flow_rate(flow_litres, 1.0)
+                    flow_litres_readings.append(flow_litres)
+            # --- Pressure sensor read (ADS1115) ---
+            if ENABLE_PRESSURE_SENSOR and pressure_chan is not None:
+                try:
+                    pressure_voltage = pressure_chan.voltage
+                    if pressure_voltage is not None:
+                        pressure_psi = (pressure_voltage - 0.5) * (100 / (4.5 - 0.5))
+                        pressure_psi = max(0, min(pressure_psi, 100))
+                        pressure_kpa = pressure_psi * 6.89476
+                        print(f"[DEBUG] Pressure: {pressure_voltage:.3f} V, {pressure_psi:.2f} PSI, {pressure_kpa:.2f} kPa")
+                        pressure_readings.append(pressure_psi)
+                    else:
+                        log_error("Pressure sensor voltage read as None.")
+                except Exception as e:
+                    log_error(f"Pressure sensor read error: {e}")
             # --- Log 5-min average flow ---
             now_time = time.time()
             if now_time - last_flow_avg_time >= AVG_FLOW_INTERVAL:
@@ -318,22 +354,6 @@ def main():
                 else:
                     log_error("[FLOW AVG] No valid flow readings to average in last 5 minutes.")
                 last_flow_avg_time = now_time
-            # --- Pressure sensor read (ADS1115) ---
-            if pressure_chan is not None:
-                try:
-                    pressure_voltage = pressure_chan.voltage
-                    if pressure_voltage is not None:
-                        # 0.5V = 0 PSI, 4.5V = 100 PSI
-                        pressure_psi = (pressure_voltage - 0.5) * (100 / (4.5 - 0.5))
-                        pressure_psi = max(0, min(pressure_psi, 100))
-                        pressure_kpa = pressure_psi * 6.89476
-                        print(f"[DEBUG] Pressure: {pressure_voltage:.3f} V, {pressure_psi:.2f} PSI, {pressure_kpa:.2f} kPa")
-                        # --- Collect for 5-min average ---
-                        pressure_readings.append(pressure_psi)
-                    else:
-                        log_error("Pressure sensor voltage read as None.")
-                except Exception as e:
-                    log_error(f"Pressure sensor read error: {e}")
             # --- Log 5-min average pressure ---
             now_time = time.time()
             if now_time - last_pressure_avg_time >= AVG_PRESSURE_INTERVAL and pressure_readings:
@@ -348,6 +368,7 @@ def main():
                 pressure_readings.clear()
                 last_pressure_avg_time = now_time
             sets_data = {
+                "sensor_name": SENSOR_NAME,
                 "timestamp": flow_timestamp,
                 "flow_pulses": flow_pulse_count,
                 "flow_litres": flow_litres,
@@ -363,36 +384,28 @@ def main():
             except Exception as e:
                 log_error(f"Failed to publish sets data: {e}")
             # --- Environment (temperature, humidity, wind, barometric pressure) reporting every second ---
-            dht_data = read_dht_sensor(dht_device)
-            # --- Wind speed calculation ---
-            wind_pulses = poll_wind_anemometer(1.0)
-            wind_speed = (wind_pulses / 20) * 1.75  # m/s, adjust formula if needed
-            wind_speed_readings.append(wind_speed)
-            # --- Log 5-min average wind speed ---
-            now_time = time.time()
-            if now_time - last_wind_avg_time >= AVG_WIND_INTERVAL and wind_speed_readings:
-                avg_wind = sum(wind_speed_readings) / len(wind_speed_readings)
-                avg_timestamp = datetime.now().isoformat()
-                try:
-                    with open(AVG_WIND_LOG_FILE, "a") as f:
-                        f.write(f"{avg_timestamp}, avg_wind={avg_wind:.2f}, samples={len(wind_speed_readings)}\n")
-                    print(f"[DEBUG] Logged 5-min avg wind: {avg_wind:.2f} m/s over {len(wind_speed_readings)} samples")
-                except Exception as e:
-                    log_error(f"Failed to write avg wind log: {e}")
-                wind_speed_readings.clear()
-                last_wind_avg_time = now_time
-            # --- Wind direction read (ADC A1) ---
+            dht_data = None
+            if ENABLE_DHT22 and dht_device is not None:
+                dht_data = read_dht_sensor(dht_device)
+            wind_speed = None
             wind_direction_deg = None
             wind_direction_compass = None
-            try:
-                wind_dir_chan = AnalogIn(ads, ADS.P1)  # Channel 1 (A1)
-                wind_dir_raw = wind_dir_chan.value
-                wind_direction_deg = raw_to_degrees(wind_dir_raw)
-                wind_direction_compass = degrees_to_compass(wind_direction_deg)
-                print(f"[DEBUG] Wind direction: raw={wind_dir_raw}, {wind_direction_deg:.1f}° ({wind_direction_compass})")
-            except Exception as e:
-                log_error(f"Wind direction read error: {e}")
+            if ENABLE_WIND_SENSOR:
+                wind_pulses = poll_wind_anemometer(1.0)
+                wind_speed = (wind_pulses / 20) * 1.75
+                wind_speed_readings.append(wind_speed)
+                if ads is not None:
+                    try:
+                        wind_dir_chan = AnalogIn(ads, ADS.P1)
+                        wind_dir_raw = wind_dir_chan.value
+                        wind_direction_deg = raw_to_degrees(wind_dir_raw)
+                        wind_direction_compass = degrees_to_compass(wind_direction_deg)
+                        print(f"[DEBUG] Wind direction: raw={wind_dir_raw}, {wind_direction_deg:.1f}° ({wind_direction_compass})")
+                    except Exception as e:
+                        log_error(f"Wind direction read error: {e}")
             barometric_pressure = None
+            temp = None
+            hum = None
             if dht_data:
                 temp = dht_data.get("temperature")
                 hum = dht_data.get("humidity")
@@ -400,45 +413,30 @@ def main():
                     log_error(f"Temperature out of range: {temp}")
                     temp = None
                 else:
-                    # --- Collect for 5-min average temperature ---
                     temperature_readings.append(temp)
-                # --- Log 5-min average temperature ---
-                now_time = time.time()
-                if now_time - last_temperature_avg_time >= AVG_TEMPERATURE_INTERVAL and temperature_readings:
-                    avg_temp = sum(temperature_readings) / len(temperature_readings)
-                    avg_timestamp = datetime.now().isoformat()
-                    try:
-                        with open(AVG_TEMPERATURE_LOG_FILE, "a") as f:
-                            f.write(f"{avg_timestamp}, avg_temp={avg_temp:.2f}, samples={len(temperature_readings)}\n")
-                        print(f"[DEBUG] Logged 5-min avg temperature: {avg_temp:.2f} C over {len(temperature_readings)} samples")
-                    except Exception as e:
-                        log_error(f"Failed to write avg temperature log: {e}")
-                    temperature_readings.clear()
-                    last_temperature_avg_time = now_time
                 if not is_sane_humidity(hum):
                     log_error(f"Humidity out of range: {hum}")
                     hum = None
-                environment_data = {
-                    "timestamp": dht_data["timestamp"],
-                    "temperature": temp,
-                    "humidity": hum,
-                    "wind_speed": wind_speed,
-                    "wind_direction_deg": wind_direction_deg,
-                    "wind_direction_compass": wind_direction_compass,
-                    "barometric_pressure": barometric_pressure,
-                    "version": SOFTWARE_VERSION
-                }
-                print(f"[DEBUG] Environment data: {environment_data}")
-                try:
-                    mqtt_client.publish("sensors/environment", json.dumps(environment_data))
-                    print("[DEBUG] Published environment data to sensors/environment")
-                except Exception as e:
-                    log_error(f"Failed to publish environment data: {e}")
-            else:
-                log_error("DHT22: No valid reading this second.")
+            environment_data = {
+                "sensor_name": SENSOR_NAME,
+                "timestamp": dht_data["timestamp"] if dht_data else datetime.now().isoformat(),
+                "temperature": temp,
+                "humidity": hum,
+                "wind_speed": wind_speed,
+                "wind_direction_deg": wind_direction_deg,
+                "wind_direction_compass": wind_direction_compass,
+                "barometric_pressure": barometric_pressure,
+                "version": SOFTWARE_VERSION
+            }
+            print(f"[DEBUG] Environment data: {environment_data}")
+            try:
+                mqtt_client.publish("sensors/environment", json.dumps(environment_data))
+                print("[DEBUG] Published environment data to sensors/environment")
+            except Exception as e:
+                log_error(f"Failed to publish environment data: {e}")
             # --- Plant (moisture, soil temperature) reporting every 5 minutes ---
             now = time.time()
-            if now - last_color_time >= GROUP_INTERVAL * 60:
+            if ENABLE_COLOR_SENSOR and sensor is not None and now - last_color_time >= GROUP_INTERVAL * 60:
                 color_readings = []
                 for i in range(NUM_COLOR_READINGS):
                     try:
@@ -457,6 +455,7 @@ def main():
                     avg_b, avg_lux, first_timestamp = None, None, datetime.now().isoformat()
                 soil_temperature = None
                 plant_data = {
+                    "sensor_name": SENSOR_NAME,
                     "timestamp": first_timestamp,
                     "moisture": avg_b,
                     "lux": avg_lux,
