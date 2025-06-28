@@ -288,22 +288,19 @@ def get_wind_reading(ads):
     return {"timestamp": datetime.now().isoformat(), "wind_speed": speed, "wind_direction_deg": deg, "wind_direction_compass": compass}
 
 def get_dht22_reading(dht_device):
-    """Read DHT22 if enabled. Returns dict with timestamp, temp, humidity."""
+    """Read DHT22 if enabled. Returns dict with timestamp, temp, humidity. Retries up to 3 times if needed."""
     if not ENABLE_DHT22 or dht_device is None:
         return {"timestamp": datetime.now().isoformat(), "temperature": None, "humidity": None}
-    data = read_dht_sensor(dht_device)
-    if not data:
-        log_error("DHT22: No valid reading this second.")
-        return {"timestamp": datetime.now().isoformat(), "temperature": None, "humidity": None}
-    temp = data.get("temperature")
-    hum = data.get("humidity")
-    if not is_sane_temp(temp):
-        log_error(f"Temperature out of range: {temp}")
-        temp = None
-    if not is_sane_humidity(hum):
-        log_error(f"Humidity out of range: {hum}")
-        hum = None
-    return {"timestamp": data["timestamp"], "temperature": temp, "humidity": hum}
+    attempts = 3
+    for attempt in range(attempts):
+        data = read_dht_sensor(dht_device)
+        if data and is_sane_temp(data.get("temperature")) and is_sane_humidity(data.get("humidity")):
+            temp = data.get("temperature")
+            hum = data.get("humidity")
+            return {"timestamp": data["timestamp"], "temperature": temp, "humidity": hum}
+        time.sleep(0.3)
+    log_error("DHT22: No valid reading this second after 3 attempts.")
+    return {"timestamp": datetime.now().isoformat(), "temperature": None, "humidity": None}
 
 def get_color_reading(sensor):
     """Read color sensor if enabled. Returns dict with timestamp, b, lux."""
