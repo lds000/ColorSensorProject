@@ -174,6 +174,22 @@ def trim_stdout_log(max_lines=1000):
     except Exception as e:
         log_error(f"Failed to trim stdout_log.txt: {e}")
 
+def trim_color_log(max_lines=1000):
+    """
+    Trims color_log.txt to the last max_lines lines.
+    """
+    log_file = "color_log.txt"
+    if not os.path.exists(log_file):
+        return
+    try:
+        with open(log_file, "r") as f:
+            lines = f.readlines()
+        if len(lines) > max_lines:
+            with open(log_file, "w") as f:
+                f.writelines(lines[-max_lines:])
+    except Exception as e:
+        log_error(f"Failed to trim color_log.txt: {e}")
+
 # --- Wind direction calibration constants (from wind_direction_test.py) ---
 CAL_N_RAW = 14350  # North
 CAL_E_RAW = 21755  # East
@@ -453,6 +469,9 @@ def main():
                     print("[DEBUG] Published plant data to sensors/plant")
                 except Exception as e:
                     log_error(f"Failed to publish plant data: {e}")
+                with open("color_log.txt", "a") as f:
+                    f.write(json.dumps(plant_data) + "\n")
+                trim_color_log(1000)
                 last_color_time = now
             # --- Trim stdout_log.txt to 1000 lines ---
             trim_stdout_log(1000)
