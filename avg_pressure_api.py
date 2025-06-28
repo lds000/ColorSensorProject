@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 import os
+import json
 
 AVG_PRESSURE_LOG_FILE = "avg_pressure_log.txt"
 AVG_WIND_LOG_FILE = "avg_wind_log.txt"
@@ -152,7 +153,7 @@ def get_recent_color_moisture():
     Returns the n most recent color/moisture readings from color_log.txt.
     Query param: n (default 5)
     Output: List of dicts with Timestamp (ISO8601) and Value (moisture as double)
-    Skips AVG lines and malformed lines.
+    Handles both legacy plain text and new JSON lines.
     """
     n = request.args.get("n", default=5, type=int)
     if n < 1 or n > 500:
@@ -162,23 +163,30 @@ def get_recent_color_moisture():
     try:
         with open(COLOR_LOG_FILE, "r") as f:
             lines = f.readlines()
-        # Only keep lines that look like a color/moisture reading (not AVG, INFO, or JSON)
-        data_lines = [line.strip() for line in lines if line.strip() and not line.startswith("AVG") and not line.startswith("[INFO]") and not line.startswith("{")]
-        data_lines = data_lines[-n:]
+        # Only keep lines that are not AVG or [INFO]
+        data_lines = [line.strip() for line in lines if line.strip() and not line.startswith("AVG") and not line.startswith("[INFO]")]
+        # Parse from the end, newest first
         results = []
-        for line in data_lines:
-            # Example: 2025-05-25T14:41:15.038663  R:8  G:20  B:18  Lux:78.40  Wetness:57.1%
+        for line in reversed(data_lines):
             try:
-                parts = line.split()
-                timestamp = parts[0]
-                # Use B value as the moisture proxy (as in get_color_reading)
-                b = float(parts[3].split(":")[1])
-                results.append({
-                    "Timestamp": timestamp,
-                    "Value": b
-                })
-            except Exception as e:
-                continue  # skip malformed lines
+                if line.startswith("{"):
+                    # JSON line
+                    obj = json.loads(line)
+                    ts = obj.get("timestamp")
+                    val = obj.get("moisture")
+                    if ts is not None and val is not None:
+                        results.append({"Timestamp": ts, "Value": float(val)})
+                else:
+                    # Legacy plain text line
+                    parts = line.split()
+                    ts = parts[0]
+                    b = float(parts[3].split(":")[1])
+                    results.append({"Timestamp": ts, "Value": b})
+            except Exception:
+                continue
+            if len(results) >= n:
+                break
+        results.reverse()  # Return in chronological order
         return jsonify(results)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
