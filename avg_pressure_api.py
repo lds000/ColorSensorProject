@@ -152,7 +152,7 @@ def get_recent_color_moisture():
     """
     Returns the n most recent color/moisture readings from color_log.txt.
     Query param: n (default 5)
-    Output: List of dicts with Timestamp (ISO8601) and Value (moisture as double)
+    Output: List of dicts with timestamp (ISO8601) and value (moisture as double)
     Handles both legacy plain text and new JSON lines.
     """
     n = request.args.get("n", default=5, type=int)
@@ -175,13 +175,13 @@ def get_recent_color_moisture():
                     ts = obj.get("timestamp")
                     val = obj.get("moisture")
                     if ts is not None and val is not None:
-                        results.append({"Timestamp": ts, "Value": float(val)})
+                        results.append({"timestamp": ts, "value": float(val)})
                 else:
                     # Legacy plain text line
                     parts = line.split()
                     ts = parts[0]
                     b = float(parts[3].split(":")[1])
-                    results.append({"Timestamp": ts, "Value": b})
+                    results.append({"timestamp": ts, "value": b})
             except Exception:
                 continue
             if len(results) >= n:
