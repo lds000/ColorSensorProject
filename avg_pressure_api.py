@@ -162,8 +162,8 @@ def get_recent_color_moisture():
     try:
         with open(COLOR_LOG_FILE, "r") as f:
             lines = f.readlines()
-        # Only keep lines that look like a color/moisture reading (not AVG or INFO)
-        data_lines = [line.strip() for line in lines if line.strip() and not line.startswith("AVG") and not line.startswith("[INFO]")]
+        # Only keep lines that look like a color/moisture reading (not AVG, INFO, or JSON)
+        data_lines = [line.strip() for line in lines if line.strip() and not line.startswith("AVG") and not line.startswith("[INFO]") and not line.startswith("{")]
         data_lines = data_lines[-n:]
         results = []
         for line in data_lines:
