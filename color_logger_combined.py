@@ -1,16 +1,19 @@
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 from sensor import setup_gpio, cleanup_gpio, setup_flow_gpio, cleanup_flow_gpio, init_sensor, read_all_sensors
 from logging_utils import log_stdout, log_error
 import time
 import json
+import paho.mqtt.client as mqtt
 
-RECEIVER_URL = "http://100.116.147.6:5000/soil-data"  # Change as needed
 NUM_READINGS = 4
 READ_SPACING = 2  # seconds between readings
 READ_INTERVAL = 5  # minutes between groups
 
 LOG_FILE = "color_log.txt"
+MQTT_BROKER = "100.116.147.6"
+MQTT_PORT = 1883
+MQTT_TOPIC = "sensors/plant"
 
 
 def main():
@@ -48,12 +51,14 @@ def main():
                 f.write(avg_line + "\n")
             log_stdout(avg_line)
             print(avg_line)
+            # MQTT publish instead of HTTP POST
             try:
-                resp = requests.post(RECEIVER_URL, json=payload, timeout=5)
-                log_stdout(f"POST status: {resp.status_code}, response: {resp.text}")
-                resp.raise_for_status()
+                client = mqtt.Client()
+                client.connect(MQTT_BROKER, MQTT_PORT, 60)
+                client.publish(MQTT_TOPIC, json.dumps(payload))
+                client.disconnect()
             except Exception as e:
-                log_error(f"POST failed: {e}")
+                log_error(f"MQTT publish failed: {e}")
             # Wait until next group
             next_group_time = datetime.fromisoformat(first_timestamp) + timedelta(minutes=READ_INTERVAL)
             now = datetime.now()

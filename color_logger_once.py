@@ -17,6 +17,7 @@ import traceback
 from requests.auth import HTTPDigestAuth
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
+import paho.mqtt.client as mqtt
 
 print("=== SCRIPT STARTED: color_logger_once.py ===")
 
@@ -64,7 +65,10 @@ STDOUT_LOG = CONFIG["STDOUT_LOG"]
 NUM_READINGS = CONFIG["NUM_READINGS"]
 READ_SPACING = CONFIG["READ_SPACING"]  # <-- Actually set variable
 READ_INTERVAL = CONFIG["READ_INTERVAL"]
-RECEIVER_URL = CONFIG["RECEIVER_URL"]
+# REMOVE: RECEIVER_URL = CONFIG["RECEIVER_URL"]
+MQTT_BROKER = "100.116.147.6"
+MQTT_PORT = 1883
+MQTT_TOPIC = "sensors/plant"
 
 # ---------- LOGGING ENHANCEMENTS ----------
 LOG_MAX_BYTES = 1024 * 1024  # 1MB per log file
@@ -404,9 +408,10 @@ try:
 
         # After collecting all readings, average them
         avg_b = sum(d['b'] for d in readings) / NUM_READINGS
-        post_data = {
+        payload = {
             "timestamp": first_timestamp,
-            "moisture": avg_b
+            "moisture": avg_b,
+            "flow_litres": total_flow
         }
         avg_line = (
             f"AVG {first_timestamp}  B:{avg_b:.1f}"
@@ -416,11 +421,13 @@ try:
         log_stdout(avg_line)
         print(avg_line)
         try:
-            clean_post_data = {k: post_data[k] for k in ("timestamp", "moisture")}
-            send_to_receiver(clean_post_data)
+            # MQTT publish instead of HTTP POST
+            client = mqtt.Client()
+            client.connect(MQTT_BROKER, MQTT_PORT, 60)
+            client.publish(MQTT_TOPIC, json.dumps(payload))
+            client.disconnect()
         except Exception as e:
-            log_error(f"Send to receiver failed for averaged reading: {e}")
-            log_stdout(f"Send to receiver failed for averaged reading: {e}")
+            log_error(f"MQTT publish failed: {e}")
 
         # Wait until READ_INTERVAL minutes after the first reading's timestamp before starting next group
         next_group_time = datetime.fromisoformat(first_timestamp) + timedelta(minutes=READ_INTERVAL)
