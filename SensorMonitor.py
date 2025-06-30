@@ -391,6 +391,7 @@ def main():
     # Scheduler state
     last_run = defaultdict(lambda: 0)
     readings_accum = defaultdict(list)
+    last_flow_log_time = 0  # For 5s logging when flow > 0
     try:
         while True:
             now = time.time()
@@ -423,22 +424,41 @@ def main():
                 "version": SOFTWARE_VERSION
             }
             publish_mqtt(mqtt_client, "sensors/environment", environment_data)
-            # --- Step 3: Accumulate for 5-min averages ---
+            # --- Step 3: Accumulate for 5-min and 5-sec averages ---
             if flow["flow_litres"] is not None:
                 readings_accum["flow"].append(flow["flow_litres"])
+                # New: maintain a separate 5-sec accumulator for granular logging
+                if "flow_5s" not in readings_accum:
+                    readings_accum["flow_5s"] = []
+                readings_accum["flow_5s"].append(flow["flow_litres"])
             if pressure["pressure_psi"] is not None:
                 readings_accum["pressure"].append(pressure["pressure_psi"])
             if wind["wind_speed"] is not None:
                 readings_accum["wind"].append(wind["wind_speed"])
             if dht["temperature"] is not None:
                 readings_accum["temperature"].append(dht["temperature"])
-            # --- Step 4: 5-min average logging (scheduler pattern) ---
+            # --- Step 4: Conditional avg_flow logging (dual-accumulator) ---
+            avg_flow_5min = None
+            avg_flow_5s = None
+            if readings_accum["flow"]:
+                avg_flow_5min = sum(readings_accum["flow"]) / len(readings_accum["flow"])
+            if "flow_5s" in readings_accum and readings_accum["flow_5s"]:
+                avg_flow_5s = sum(readings_accum["flow_5s"]) / len(readings_accum["flow_5s"])
+            # Log every 5 minutes (regardless of flow value)
             if now - last_run["flow_avg"] >= AVG_FLOW_INTERVAL:
-                if readings_accum["flow"]:
-                    avg_flow = sum(readings_accum["flow"]) / len(readings_accum["flow"])
-                    log_5min_average(AVG_FLOW_LOG_FILE, f"{avg_flow:.4f}", "avg_flow", len(readings_accum["flow"]))
+                if avg_flow_5min is not None:
+                    log_5min_average(AVG_FLOW_LOG_FILE, f"{avg_flow_5min:.4f}", "avg_flow", len(readings_accum["flow"]))
                     readings_accum["flow"] = []
                 last_run["flow_avg"] = now
+                last_flow_log_time = now  # Reset 5s timer after 5min log
+                # Also clear the 5s accumulator to avoid overlap
+                readings_accum["flow_5s"] = []
+            # Log every 5 seconds if avg_flow_5s > 0 (but do not reset 5min timer)
+            elif avg_flow_5s is not None and avg_flow_5s > 0 and now - last_flow_log_time >= 5:
+                log_5min_average(AVG_FLOW_LOG_FILE, f"{avg_flow_5s:.4f}", "avg_flow", len(readings_accum["flow_5s"]))
+                readings_accum["flow_5s"] = []
+                last_flow_log_time = now
+            # --- Step 5: 5-min average logging (scheduler pattern) ---
             if now - last_run["pressure_avg"] >= AVG_PRESSURE_INTERVAL:
                 if readings_accum["pressure"]:
                     avg_psi = sum(readings_accum["pressure"]) / len(readings_accum["pressure"])
@@ -457,7 +477,7 @@ def main():
                     log_5min_average(AVG_TEMPERATURE_LOG_FILE, f"{avg_temp:.2f}", "avg_temp", len(readings_accum["temperature"]))
                     readings_accum["temperature"] = []
                 last_run["temperature_avg"] = now
-            # --- Step 5: Plant/color reporting every GROUP_INTERVAL minutes ---
+            # --- Step 6: Plant/color reporting every GROUP_INTERVAL minutes ---
             if ENABLE_COLOR_SENSOR and sensor is not None and now - last_run["color"] >= GROUP_INTERVAL * 60:
                 color = get_color_reading(sensor)
                 plant_data = {
@@ -473,7 +493,7 @@ def main():
                     f.write(json.dumps(plant_data) + "\n")
                 trim_color_log(1000)
                 last_run["color"] = now
-            # --- Step 6: Trim stdout_log.txt ---
+            # --- Step 7: Trim stdout_log.txt ---
             trim_stdout_log(1000)
     except KeyboardInterrupt:
         print("[INFO] Exiting...")
