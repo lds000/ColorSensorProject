@@ -303,7 +303,7 @@ def get_dht22_reading(dht_device):
     return {"timestamp": datetime.now().isoformat(), "temperature": None, "humidity": None}
 
 def get_color_reading(sensor):
-    """Read color sensor if enabled. Returns dict with timestamp, b, lux."""
+    """Read color sensor if enabled. Returns dict with timestamp, moisture (calibrated %), lux."""
     if not ENABLE_COLOR_SENSOR or sensor is None:
         return {"timestamp": datetime.now().isoformat(), "moisture": None, "lux": None}
     readings = []
@@ -319,9 +319,24 @@ def get_color_reading(sensor):
         avg_b = sum(d['b'] for d in readings) / len(readings)
         avg_lux = sum(d['lux'] for d in readings) / len(readings)
         ts = readings[0]['timestamp']
+        # --- Moisture calibration/interpolation ---
+        try:
+            with open("calibration.json", "r") as f:
+                calib = json.load(f)
+            b_dry = float(calib["white_stick"]["b"])
+            b_wet = float(calib["blue_stick"]["b"])
+            # Clamp and interpolate
+            if b_wet == b_dry:
+                moisture_pct = 0.0
+            else:
+                moisture_pct = (avg_b - b_dry) / (b_wet - b_dry) * 100.0
+                moisture_pct = max(0.0, min(100.0, moisture_pct))
+        except Exception as e:
+            log_error(f"Failed to load or use calibration.json: {e}")
+            moisture_pct = None
     else:
-        avg_b, avg_lux, ts = None, None, datetime.now().isoformat()
-    return {"timestamp": ts, "moisture": avg_b, "lux": avg_lux}
+        avg_lux, ts, moisture_pct = None, datetime.now().isoformat(), None
+    return {"timestamp": ts, "moisture": moisture_pct, "lux": avg_lux}
 
 # --- Reporting/Logging Functions ---
 def publish_mqtt(client, topic, payload):
