@@ -1,0 +1,23 @@
+ * Serving Flask app 'avg_pressure_api'
+ * Debug mode: off
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5001
+ * Running on http://192.168.68.98:5001
+Press CTRL+C to quit
+127.0.0.1 - - [20/Jun/2025 11:00:31] "GET /pressure-avg-latest HTTP/1.1" 200 -
+100.116.147.6 - - [20/Jun/2025 11:00:46] "GET /pressure-avg-latest HTTP/1.1" 200 -
+100.111.141.110 - - [20/Jun/2025 11:01:01] "GET /pressure-avg-latest?n=100 HTTP/1.1" 200 -
+100.111.141.110 - - [20/Jun/2025 11:01:17] "GET /pressure-avg-latest?n=100 HTTP/1.1" 200 -
+100.111.141.110 - - [20/Jun/2025 11:08:43] "GET /pressure-avg-latest?n=100 HTTP/1.1" 200 -
+100.111.141.110 - - [20/Jun/2025 11:09:50] "GET /pressure-avg-latest?n=500 HTTP/1.1" 400 -
+100.111.141.110 - - [20/Jun/2025 11:10:02] "GET /pressure-avg-latest?n=200 HTTP/1.1" 400 -
+100.111.141.110 - - [20/Jun/2025 11:10:15] "GET /pressure-avg-latest?n=100 HTTP/1.1" 200 -
+100.111.141.110 - - [20/Jun/2025 11:10:25] "GET /pressure-avg-latest?n=150 HTTP/1.1" 400 -
+100.111.141.110 - - [20/Jun/2025 11:10:35] "GET /pressure-avg-latest?n=120 HTTP/1.1" 400 -
+100.116.147.6 - - [20/Jun/2025 11:11:14] "GET /pressure-avg-latest?n=100 HTTP/1.1" 200 -
+100.116.147.6 - - [20/Jun/2025 11:11:18] "GET /pressure-avg-latest?n=200 HTTP/1.1" 400 -
+ * Serving Flask app 'avg_pressure_api'
+ * Debug mode: off
+Address already in use
+Port 5001 is in use by another program. Either identify and stop that program, or start the server with a different port.
