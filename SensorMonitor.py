@@ -430,7 +430,7 @@ def main():
                 trim_color_log(1000)
                 last_run["color"] = now
             # --- Step 7: Trim stdout_log.txt ---
-            trim_stdout_log(1000)
+            # trim_stdout_log(1000)  # Disabled: handled by logrotate or external tool
     except KeyboardInterrupt:
         print("[INFO] Exiting...")
     finally:
