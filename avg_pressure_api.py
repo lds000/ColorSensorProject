@@ -10,6 +10,7 @@ AVG_WIND_LOG_FILE = "avg_wind_log.txt"
 AVG_FLOW_LOG_FILE = "avg_flow_log.txt"
 AVG_TEMPERATURE_LOG_FILE = "avg_temperature_log.txt"
 COLOR_LOG_FILE = "color_log.txt"
+AVG_WIND_DIRECTION_LOG_FILE = "avg_wind_direction_log.txt"
 
 app = Flask(__name__)
 
@@ -190,6 +191,43 @@ def get_recent_color_moisture():
             if len(results) >= n:
                 break
         results.reverse()  # Return in chronological order
+        return jsonify(results)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/wind-direction-avg-latest", methods=["GET"])
+def get_recent_avg_wind_direction():
+    """
+    Returns the n most recent average wind direction readings from avg_wind_direction_log.txt.
+    Query param: n (default 5)
+    """
+    n = request.args.get("n", default=5, type=int)
+    if n < 1 or n > 500:
+        return jsonify({"error": "n must be between 1 and 500"}), 400
+    if not os.path.exists(AVG_WIND_DIRECTION_LOG_FILE):
+        return jsonify([])
+    try:
+        with open(AVG_WIND_DIRECTION_LOG_FILE, "r") as f:
+            lines = f.readlines()
+        lines = [line.strip() for line in lines if line.strip()][-n:]
+        results = []
+        for line in lines:
+            # Example: 2025-07-03T12:00:00.000000, avg_wind_direction=123.45,NW, samples=300
+            try:
+                parts = line.split(",")
+                timestamp = parts[0].strip()
+                deg_and_compass = parts[1].split("=")[1].split(";") if ";" in parts[1] else parts[1].split("=")[1].split(",")
+                avg_deg = float(deg_and_compass[0])
+                compass = deg_and_compass[1].strip() if len(deg_and_compass) > 1 else None
+                samples = int(parts[2].split("=")[1])
+                results.append({
+                    "timestamp": timestamp,
+                    "avg_wind_direction_deg": avg_deg,
+                    "avg_wind_direction_compass": compass,
+                    "samples": samples
+                })
+            except Exception:
+                continue
         return jsonify(results)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
