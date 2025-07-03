@@ -19,6 +19,7 @@ from sensors.color_sensor import ColorSensor
 from sensors.dht22_sensor import DHT22Sensor
 from sensors.wind_sensor import WindSensor
 from sensors.pressure_sensor import PressureSensor
+from sensors.wind_direction_sensor import WindDirectionSensor
 
 # --- CONFIG ---
 FLOW_SENSOR_PIN = 25  # BCM numbering
@@ -143,19 +144,11 @@ def get_wind_reading(wind_sensor):
     if not ENABLE_WIND_SENSOR:
         return {"timestamp": datetime.now().isoformat(), "wind_speed": None, "wind_direction_deg": None, "wind_direction_compass": None}
     wind = wind_sensor.read()
-    # --- RESTORED: Wind direction reading from ADS1115 ---
-    if ads is not None:
-        try:
-            wind_dir_chan = AnalogIn(ads, ADS.P1)
-            wind_dir_raw = wind_dir_chan.value
-            wind_dir_deg = raw_to_degrees(wind_dir_raw)
-            wind_dir_compass = degrees_to_compass(wind_dir_deg)
-            wind["wind_direction_deg"] = wind_dir_deg
-            wind["wind_direction_compass"] = wind_dir_compass
-        except Exception as e:
-            log_error(f"Wind direction read error: {e}")
-            wind["wind_direction_deg"] = None
-            wind["wind_direction_compass"] = None
+    # --- Wind direction reading ---
+    if wind_direction_sensor is not None:
+        wind_dir = wind_direction_sensor.read()
+        wind["wind_direction_deg"] = wind_dir["wind_direction_deg"]
+        wind["wind_direction_compass"] = wind_dir["wind_direction_compass"]
     else:
         wind["wind_direction_deg"] = None
         wind["wind_direction_compass"] = None
@@ -242,6 +235,7 @@ def main():
     wind_sensor = None
     pressure_sensor = None
     ads = None
+    wind_direction_sensor = None
     if ENABLE_FLOW_SENSOR:
         try:
             flow_sensor = FlowSensor(FLOW_SENSOR_PIN, FLOW_PULSES_PER_LITRE)
@@ -270,16 +264,22 @@ def main():
         except Exception as e:
             log_error(f"Wind sensor init error: {e}")
             wind_sensor = None
-    if ENABLE_PRESSURE_SENSOR:
+    if ENABLE_PRESSURE_SENSOR or True:  # Ensure ADS is always initialized if wind direction is needed
         try:
             import busio
             import board
             ads = ADS.ADS1115(busio.I2C(board.SCL, board.SDA))
-            pressure_sensor = PressureSensor(ads)
-            print("[DEBUG] Pressure sensor initialized.")
+            print("[DEBUG] ADS1115 initialized.")
+            if ENABLE_PRESSURE_SENSOR:
+                pressure_sensor = PressureSensor(ads)
+                print("[DEBUG] Pressure sensor initialized.")
+            # --- Wind direction sensor ---
+            wind_direction_sensor = WindDirectionSensor(ads)
+            print("[DEBUG] Wind direction sensor initialized.")
         except Exception as e:
-            log_error(f"Pressure sensor init error: {e}")
+            log_error(f"ADS1115 init error: {e}")
             pressure_sensor = None
+            wind_direction_sensor = None
     # MQTT setup
     mqtt_broker = "100.116.147.6"
     mqtt_port = 1883
@@ -315,24 +315,16 @@ def main():
                 dht = {"timestamp": datetime.now().isoformat(), "temperature": None, "humidity": None}
             if wind_sensor is not None:
                 wind = wind_sensor.read()
-                # --- RESTORED: Wind direction reading from ADS1115 ---
-                if ads is not None:
-                    try:
-                        wind_dir_chan = AnalogIn(ads, ADS.P1)
-                        wind_dir_raw = wind_dir_chan.value
-                        wind_dir_deg = raw_to_degrees(wind_dir_raw)
-                        wind_dir_compass = degrees_to_compass(wind_dir_deg)
-                        wind["wind_direction_deg"] = wind_dir_deg
-                        wind["wind_direction_compass"] = wind_dir_compass
-                    except Exception as e:
-                        log_error(f"Wind direction read error: {e}")
-                        wind["wind_direction_deg"] = None
-                        wind["wind_direction_compass"] = None
-                else:
-                    wind["wind_direction_deg"] = None
-                    wind["wind_direction_compass"] = None
             else:
-                wind = {"timestamp": datetime.now().isoformat(), "wind_speed": None, "wind_direction_deg": None, "wind_direction_compass": None}
+                wind = {"timestamp": datetime.now().isoformat(), "wind_speed": None}
+            # --- Wind direction reading ---
+            if wind_direction_sensor is not None:
+                wind_dir = wind_direction_sensor.read()
+                wind["wind_direction_deg"] = wind_dir["wind_direction_deg"]
+                wind["wind_direction_compass"] = wind_dir["wind_direction_compass"]
+            else:
+                wind["wind_direction_deg"] = None
+                wind["wind_direction_compass"] = None
             if pressure_sensor is not None:
                 pressure = pressure_sensor.read()
             else:
