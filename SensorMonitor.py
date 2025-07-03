@@ -14,6 +14,11 @@ import busio
 import adafruit_ads1x15.ads1115 as ADS
 from adafruit_ads1x15.analog_in import AnalogIn
 from collections import defaultdict
+from sensors.flow_sensor import FlowSensor
+from sensors.color_sensor import ColorSensor
+from sensors.dht22_sensor import DHT22Sensor
+from sensors.wind_sensor import WindSensor
+from sensors.pressure_sensor import PressureSensor
 
 # --- CONFIG ---
 FLOW_SENSOR_PIN = 25  # BCM numbering
@@ -252,29 +257,27 @@ def get_flow_reading():
     rate = calculate_flow_rate(litres, 1.0)
     return {"timestamp": datetime.now().isoformat(), "flow_pulses": pulses, "flow_litres": litres, "flow_rate_lpm": rate}
 
-def get_pressure_reading(pressure_chan):
+def get_pressure_reading(pressure_sensor):
     """Read pressure sensor if enabled. Returns dict with timestamp, psi, kpa."""
-    if not ENABLE_PRESSURE_SENSOR or pressure_chan is None:
+    if not ENABLE_PRESSURE_SENSOR or pressure_sensor is None:
         return {"timestamp": datetime.now().isoformat(), "pressure_psi": None, "pressure_kpa": None}
     try:
-        voltage = pressure_chan.voltage
-        if voltage is not None:
-            psi = (voltage - 0.5) * (100 / (4.5 - 0.5))
-            psi = max(0, min(psi, 100))
-            kpa = psi * 6.89476
-            return {"timestamp": datetime.now().isoformat(), "pressure_psi": psi, "pressure_kpa": kpa}
-        else:
-            log_error("Pressure sensor voltage read as None.")
+        pressure = pressure_sensor.read()
+        return {
+            "timestamp": pressure["timestamp"],
+            "pressure_psi": pressure["pressure_psi"],
+            "pressure_kpa": pressure["pressure_kpa"]
+        }
     except Exception as e:
         log_error(f"Pressure sensor read error: {e}")
     return {"timestamp": datetime.now().isoformat(), "pressure_psi": None, "pressure_kpa": None}
 
-def get_wind_reading(ads):
+def get_wind_reading(wind_sensor):
     """Read wind speed and direction if enabled. Returns dict with timestamp, speed, deg, compass."""
     if not ENABLE_WIND_SENSOR:
         return {"timestamp": datetime.now().isoformat(), "wind_speed": None, "wind_direction_deg": None, "wind_direction_compass": None}
-    wind_pulses = poll_wind_anemometer(1.0)
-    speed = (wind_pulses / 20) * 1.75
+    wind = wind_sensor.read()
+    speed = wind["wind_speed"]
     deg = None
     compass = None
     if ads is not None:
@@ -360,33 +363,50 @@ def log_5min_average(logfile, avg_value, label, sample_count):
 def main():
     print(f"[DEBUG] Starting SensorMonitor main loop... (version {SOFTWARE_VERSION})")
     # Sensor initialization
-    sensor = None
+    flow_sensor = None
+    color_sensor = None
+    dht22_sensor = None
+    wind_sensor = None
+    pressure_sensor = None
+    ads = None
+    if ENABLE_FLOW_SENSOR:
+        try:
+            flow_sensor = FlowSensor(FLOW_SENSOR_PIN, FLOW_PULSES_PER_LITRE)
+            print("[DEBUG] Flow sensor initialized.")
+        except Exception as e:
+            log_error(f"Flow sensor init error: {e}")
+            flow_sensor = None
     if ENABLE_COLOR_SENSOR:
         try:
-            sensor = init_color_sensor()
+            color_sensor = ColorSensor(LED_PIN, NUM_COLOR_READINGS, COLOR_READ_SPACING)
             print("[DEBUG] Color sensor initialized.")
         except Exception as e:
             log_error(f"Color sensor init error: {e}")
-            sensor = None
-    dht_device = None
+            color_sensor = None
     if ENABLE_DHT22:
         try:
-            dht_device = adafruit_dht.DHT22(DHT_PIN)
+            dht22_sensor = DHT22Sensor(DHT_PIN)
             print("[DEBUG] DHT22 sensor initialized.")
         except Exception as e:
             log_error(f"DHT22 init error: {e}")
-            dht_device = None
-    ads = None
-    pressure_chan = None
+            dht22_sensor = None
+    if ENABLE_WIND_SENSOR:
+        try:
+            wind_sensor = WindSensor(WIND_SENSOR_PIN)
+            print("[DEBUG] Wind sensor initialized.")
+        except Exception as e:
+            log_error(f"Wind sensor init error: {e}")
+            wind_sensor = None
     if ENABLE_PRESSURE_SENSOR:
         try:
-            i2c = busio.I2C(board.SCL, board.SDA)
-            ads = ADS.ADS1115(i2c)
-            pressure_chan = AnalogIn(ads, ADS.P0)
-            print("[DEBUG] ADS1115 initialized for pressure sensor.")
+            import busio
+            import board
+            ads = ADS.ADS1115(busio.I2C(board.SCL, board.SDA))
+            pressure_sensor = PressureSensor(ads)
+            print("[DEBUG] Pressure sensor initialized.")
         except Exception as e:
-            log_error(f"ADS1115 init error: {e}")
-            pressure_chan = None
+            log_error(f"Pressure sensor init error: {e}")
+            pressure_sensor = None
     # MQTT setup
     mqtt_broker = "100.116.147.6"
     mqtt_port = 1883
@@ -411,10 +431,25 @@ def main():
         while True:
             now = time.time()
             # --- Step 1: Collect all sensor readings ---
-            flow = get_flow_reading()
-            pressure = get_pressure_reading(pressure_chan)
-            wind = get_wind_reading(ads)
-            dht = get_dht22_reading(dht_device)
+            if flow_sensor is not None:
+                flow = flow_sensor.read()
+                flow["flow_rate_lpm"] = calculate_flow_rate(flow["flow_litres"], 1.0)
+            else:
+                flow = {"timestamp": datetime.now().isoformat(), "flow_pulses": None, "flow_litres": None, "flow_rate_lpm": None}
+            if dht22_sensor is not None:
+                dht = dht22_sensor.read()
+            else:
+                dht = {"timestamp": datetime.now().isoformat(), "temperature": None, "humidity": None}
+            if wind_sensor is not None:
+                wind = wind_sensor.read()
+                wind["wind_direction_deg"] = None
+                wind["wind_direction_compass"] = None
+            else:
+                wind = {"timestamp": datetime.now().isoformat(), "wind_speed": None, "wind_direction_deg": None, "wind_direction_compass": None}
+            if pressure_sensor is not None:
+                pressure = pressure_sensor.read()
+            else:
+                pressure = {"timestamp": datetime.now().isoformat(), "pressure_psi": None, "pressure_kpa": None}
             # --- Step 2: Publish/report per-second data ---
             sets_data = {
                 "sensor_name": SENSOR_NAME,
@@ -493,13 +528,32 @@ def main():
                     readings_accum["temperature"] = []
                 last_run["temperature_avg"] = now
             # --- Step 6: Plant/color reporting every GROUP_INTERVAL minutes ---
-            if ENABLE_COLOR_SENSOR and sensor is not None and now - last_run["color"] >= GROUP_INTERVAL * 60:
-                color = get_color_reading(sensor)
+            if ENABLE_COLOR_SENSOR and color_sensor is not None and now - last_run["color"] >= GROUP_INTERVAL * 60:
+                color_readings = color_sensor.read()
+                if color_readings:
+                    avg_b = sum(d['b'] for d in color_readings) / len(color_readings)
+                    avg_lux = sum(d['lux'] for d in color_readings) / len(color_readings)
+                    ts = color_readings[0]['timestamp']
+                    try:
+                        with open("calibration.json", "r") as f:
+                            calib = json.load(f)
+                        b_dry = float(calib["white_stick"]["b"])
+                        b_wet = float(calib["blue_stick"]["b"])
+                        if b_wet == b_dry:
+                            moisture_pct = 0.0
+                        else:
+                            moisture_pct = (avg_b - b_dry) / (b_wet - b_dry) * 100.0
+                            moisture_pct = max(0.0, min(100.0, moisture_pct))
+                    except Exception as e:
+                        log_error(f"Failed to load or use calibration.json: {e}")
+                        moisture_pct = None
+                else:
+                    avg_lux, ts, moisture_pct = None, datetime.now().isoformat(), None
                 plant_data = {
                     "sensor_name": SENSOR_NAME,
-                    "timestamp": color["timestamp"],
-                    "moisture": color["moisture"],
-                    "lux": color["lux"],
+                    "timestamp": ts,
+                    "moisture": moisture_pct,
+                    "lux": avg_lux,
                     "soil_temperature": None,
                     "version": SOFTWARE_VERSION
                 }
