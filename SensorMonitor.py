@@ -20,6 +20,7 @@ from sensors.dht22_sensor import DHT22Sensor
 from sensors.wind_sensor import WindSensor
 from sensors.pressure_sensor import PressureSensor
 from sensors.wind_direction_sensor import WindDirectionSensor
+from logging_utils import log_error, trim_log_file, calculate_flow_rate
 
 # --- CONFIG ---
 FLOW_SENSOR_PIN = 25  # BCM numbering
@@ -99,23 +100,6 @@ def degrees_to_compass(degrees):
     idx = int((degrees + 22.5) // 45)
     return COMPASS_LABELS[idx]
 
-def calculate_flow_rate(litres, duration_seconds):
-    """
-    Calculate the flow rate in liters per minute.
-    Args:
-        litres (float): The amount of water in liters measured during the duration.
-        duration_seconds (float): The duration in seconds over which the flow was measured.
-    Returns:
-        float: The flow rate in liters per minute.
-    """
-    try:
-        if litres is None or duration_seconds == 0:
-            return 0.0
-        return (litres / duration_seconds) * 60
-    except Exception as e:
-        log_error(f"Flow rate calculation error: {e}")
-        return 0.0
-
 # --- Modularized Sensor Reading Functions ---
 def get_flow_reading():
     """Read flow sensor if enabled. Returns dict with timestamp, pulses, litres, rate."""
@@ -190,44 +174,6 @@ def log_5min_average(logfile, avg_value, label, sample_count):
         print(f"[DEBUG] Logged 5-min avg {label}: {avg_value} over {sample_count} samples")
     except Exception as e:
         log_error(f"Failed to write avg {label} log: {e}")
-
-def trim_color_log(max_lines):
-    """Trim color_log.txt to the last max_lines lines for log rotation and disk space safety."""
-    try:
-        log_file = "color_log.txt"
-        if not os.path.exists(log_file):
-            return
-        with open(log_file, "r") as f:
-            lines = f.readlines()
-        if len(lines) > max_lines:
-            with open(log_file, "w") as f:
-                f.writelines(lines[-max_lines:])
-    except Exception as e:
-        log_error(f"Failed to trim color_log.txt: {e}")
-
-def trim_stdout_log(max_lines):
-    """Trim stdout_log.txt to the last max_lines lines for log rotation and disk space safety."""
-    try:
-        log_file = "stdout_log.txt"
-        if not os.path.exists(log_file):
-            return
-        with open(log_file, "r") as f:
-            lines = f.readlines()
-        if len(lines) > max_lines:
-            with open(log_file, "w") as f:
-                f.writelines(lines[-max_lines:])
-    except Exception as e:
-        log_error(f"Failed to trim stdout_log.txt: {e}")
-
-def log_error(message):
-    """Log critical errors with timestamp to error_log.txt and print to console."""
-    try:
-        ts = datetime.now().isoformat()
-        with open(ERROR_LOG_FILE, "a") as f:
-            f.write(f"[{ts}] ERROR: {message}\n")
-        print(f"[ERROR] {message}")
-    except Exception as e:
-        print(f"[FATAL] Could not write to error_log.txt: {e}")
 
 # --- Main Loop with Scheduler ---
 def main():
@@ -461,7 +407,7 @@ def main():
                 publish_mqtt(mqtt_client, "sensors/plant", plant_data)
                 with open("color_log.txt", "a") as f:
                     f.write(json.dumps(plant_data) + "\n")
-                trim_color_log(1000)
+                trim_log_file("color_log.txt", 1000)
                 last_run["color"] = now
             # --- Step 7: Trim stdout_log.txt ---
             # trim_stdout_log(1000)  # Disabled: handled by logrotate or external tool
