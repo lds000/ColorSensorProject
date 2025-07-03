@@ -6,7 +6,6 @@ import adafruit_tcs34725
 from datetime import datetime, timedelta
 import requests
 import adafruit_dht
-import paho.mqtt.client as mqtt
 import json
 import os
 import board
@@ -20,7 +19,8 @@ from sensors.dht22_sensor import DHT22Sensor
 from sensors.wind_sensor import WindSensor
 from sensors.pressure_sensor import PressureSensor
 from sensors.wind_direction_sensor import WindDirectionSensor
-from logging_utils import log_error, trim_log_file, calculate_flow_rate
+from services.mqtt_publisher import MqttPublisher
+from services.log_manager import LogManager
 
 # --- CONFIG ---
 FLOW_SENSOR_PIN = 25  # BCM numbering
@@ -107,7 +107,7 @@ def get_flow_reading():
         return {"timestamp": datetime.now().isoformat(), "flow_pulses": None, "flow_litres": None, "flow_rate_lpm": None}
     pulses, litres = poll_flow_meter(1.0)
     if not is_sane_flow(pulses, litres):
-        log_error(f"Flow reading out of range: pulses={pulses}, litres={litres}")
+        log_mgr.log_error(f"Flow reading out of range: pulses={pulses}, litres={litres}")
         return {"timestamp": datetime.now().isoformat(), "flow_pulses": None, "flow_litres": None, "flow_rate_lpm": None}
     rate = calculate_flow_rate(litres, 1.0)
     return {"timestamp": datetime.now().isoformat(), "flow_pulses": pulses, "flow_litres": litres, "flow_rate_lpm": rate}
@@ -124,7 +124,7 @@ def get_pressure_reading(pressure_sensor):
             "pressure_kpa": pressure["pressure_kpa"]
         }
     except Exception as e:
-        log_error(f"Pressure sensor read error: {e}")
+        log_mgr.log_error(f"Pressure sensor read error: {e}")
     return {"timestamp": datetime.now().isoformat(), "pressure_psi": None, "pressure_kpa": None}
 
 def get_wind_reading(wind_sensor):
@@ -154,18 +154,10 @@ def get_dht22_reading(dht_device):
             hum = data.get("humidity")
             return {"timestamp": data["timestamp"], "temperature": temp, "humidity": hum}
         time.sleep(0.3)
-    log_error("DHT22: No valid reading this second after 3 attempts.")
+    log_mgr.log_error("DHT22: No valid reading this second after 3 attempts.")
     return {"timestamp": datetime.now().isoformat(), "temperature": None, "humidity": None}
 
 # --- Reporting/Logging Functions ---
-def publish_mqtt(client, topic, payload):
-    """Publish a JSON payload to MQTT."""
-    try:
-        client.publish(topic, json.dumps(payload))
-        print(f"[DEBUG] Published to {topic}: {payload}")
-    except Exception as e:
-        log_error(f"Failed to publish to {topic}: {e}")
-
 def log_5min_average(logfile, avg_value, label, sample_count):
     """Append a 5-min average to a log file."""
     try:
@@ -173,11 +165,12 @@ def log_5min_average(logfile, avg_value, label, sample_count):
             f.write(f"{datetime.now().isoformat()}, {label}={avg_value}, samples={sample_count}\n")
         print(f"[DEBUG] Logged 5-min avg {label}: {avg_value} over {sample_count} samples")
     except Exception as e:
-        log_error(f"Failed to write avg {label} log: {e}")
+        log_mgr.log_error(f"Failed to write avg {label} log: {e}")
 
 # --- Main Loop with Scheduler ---
 def main():
     print(f"[DEBUG] Starting SensorMonitor main loop... (version {SOFTWARE_VERSION})")
+    log_mgr = LogManager(ERROR_LOG_FILE)
     # Sensor initialization
     flow_sensor = None
     color_sensor = None
@@ -191,28 +184,28 @@ def main():
             flow_sensor = FlowSensor(FLOW_SENSOR_PIN, FLOW_PULSES_PER_LITRE)
             print("[DEBUG] Flow sensor initialized.")
         except Exception as e:
-            log_error(f"Flow sensor init error: {e}")
+            log_mgr.log_error(f"Flow sensor init error: {e}")
             flow_sensor = None
     if ENABLE_COLOR_SENSOR:
         try:
             color_sensor = ColorSensor(LED_PIN, NUM_COLOR_READINGS, COLOR_READ_SPACING)
             print("[DEBUG] Color sensor initialized.")
         except Exception as e:
-            log_error(f"Color sensor init error: {e}")
+            log_mgr.log_error(f"Color sensor init error: {e}")
             color_sensor = None
     if ENABLE_DHT22:
         try:
             dht22_sensor = DHT22Sensor(DHT_PIN)
             print("[DEBUG] DHT22 sensor initialized.")
         except Exception as e:
-            log_error(f"DHT22 init error: {e}")
+            log_mgr.log_error(f"DHT22 init error: {e}")
             dht22_sensor = None
     if ENABLE_WIND_SENSOR:
         try:
             wind_sensor = WindSensor(WIND_SENSOR_PIN)
             print("[DEBUG] Wind sensor initialized.")
         except Exception as e:
-            log_error(f"Wind sensor init error: {e}")
+            log_mgr.log_error(f"Wind sensor init error: {e}")
             wind_sensor = None
     if ENABLE_PRESSURE_SENSOR or True:  # Ensure ADS is always initialized if wind direction is needed
         try:
@@ -227,25 +220,13 @@ def main():
             wind_direction_sensor = WindDirectionSensor(ads)
             print("[DEBUG] Wind direction sensor initialized.")
         except Exception as e:
-            log_error(f"ADS1115 init error: {e}")
+            log_mgr.log_error(f"ADS1115 init error: {e}")
             pressure_sensor = None
             wind_direction_sensor = None
-    # MQTT setup
+    # MQTT setup (now using MqttPublisher)
     mqtt_broker = "100.116.147.6"
     mqtt_port = 1883
-    mqtt_client = mqtt.Client()
-    connected = False
-    retry_delay = 5
-    while not connected:
-        try:
-            mqtt_client.connect(mqtt_broker, mqtt_port, 60)
-            print("[DEBUG] MQTT connected successfully.")
-            connected = True
-        except Exception as e:
-            log_error(f"MQTT connection failed: {e}")
-            print(f"[INFO] Retrying MQTT connection in {retry_delay} seconds...")
-            time.sleep(retry_delay)
-            retry_delay = min(retry_delay * 2, 60)
+    mqtt_publisher = MqttPublisher(mqtt_broker, mqtt_port, log_file=ERROR_LOG_FILE)
     # Scheduler state
     last_run = defaultdict(lambda: 0)
     readings_accum = defaultdict(list)
@@ -255,14 +236,22 @@ def main():
             now = time.time()
             # --- Step 1: Collect all sensor readings ---
             if flow_sensor is not None:
-                flow = flow_sensor.read()
-                flow["flow_rate_lpm"] = calculate_flow_rate(flow["flow_litres"], 1.0)
+                try:
+                    flow = flow_sensor.read()
+                    flow["flow_rate_lpm"] = calculate_flow_rate(flow["flow_litres"], 1.0)
+                except Exception as e:
+                    log_mgr.log_error(f"Flow reading out of range: {e}")
+                    flow = {"timestamp": datetime.now().isoformat(), "flow_pulses": None, "flow_litres": None, "flow_rate_lpm": None}
             else:
                 flow = {"timestamp": datetime.now().isoformat(), "flow_pulses": None, "flow_litres": None, "flow_rate_lpm": None}
-            if dht22_sensor is not None:
-                dht = dht22_sensor.read()
+            if pressure_sensor is not None:
+                try:
+                    pressure = pressure_sensor.read()
+                except Exception as e:
+                    log_mgr.log_error(f"Pressure sensor read error: {e}")
+                    pressure = {"timestamp": datetime.now().isoformat(), "pressure_psi": None, "pressure_kpa": None}
             else:
-                dht = {"timestamp": datetime.now().isoformat(), "temperature": None, "humidity": None}
+                pressure = {"timestamp": datetime.now().isoformat(), "pressure_psi": None, "pressure_kpa": None}
             if wind_sensor is not None:
                 wind = wind_sensor.read()
             else:
@@ -275,10 +264,14 @@ def main():
             else:
                 wind["wind_direction_deg"] = None
                 wind["wind_direction_compass"] = None
-            if pressure_sensor is not None:
-                pressure = pressure_sensor.read()
+            if dht22_sensor is not None:
+                try:
+                    dht = dht22_sensor.read()
+                except Exception as e:
+                    log_mgr.log_error(f"DHT22: No valid reading this second after 3 attempts. {e}")
+                    dht = {"timestamp": datetime.now().isoformat(), "temperature": None, "humidity": None}
             else:
-                pressure = {"timestamp": datetime.now().isoformat(), "pressure_psi": None, "pressure_kpa": None}
+                dht = {"timestamp": datetime.now().isoformat(), "temperature": None, "humidity": None}
             # --- Step 2: Publish/report per-second data ---
             sets_data = {
                 "sensor_name": SENSOR_NAME,
@@ -290,7 +283,7 @@ def main():
                 "pressure_kpa": pressure["pressure_kpa"],
                 "version": SOFTWARE_VERSION
             }
-            publish_mqtt(mqtt_client, "sensors/sets", sets_data)
+            mqtt_publisher.publish("sensors/sets", sets_data)
             environment_data = {
                 "sensor_name": SENSOR_NAME,
                 "timestamp": dht["timestamp"],
@@ -302,7 +295,7 @@ def main():
                 "barometric_pressure": None,
                 "version": SOFTWARE_VERSION
             }
-            publish_mqtt(mqtt_client, "sensors/environment", environment_data)
+            mqtt_publisher.publish("sensors/environment", environment_data)
             # --- Step 3: Accumulate for 5-min and 5-sec averages ---
             if flow["flow_litres"] is not None:
                 readings_accum["flow"].append(flow["flow_litres"])
@@ -392,7 +385,7 @@ def main():
                             moisture_pct = (avg_b - b_dry) / (b_wet - b_dry) * 100.0
                             moisture_pct = max(0.0, min(100.0, moisture_pct))
                     except Exception as e:
-                        log_error(f"Failed to load or use calibration.json: {e}")
+                        log_mgr.log_error(f"Failed to load or use calibration.json: {e}")
                         moisture_pct = None
                 else:
                     avg_lux, ts, moisture_pct = None, datetime.now().isoformat(), None
@@ -404,10 +397,10 @@ def main():
                     "soil_temperature": None,
                     "version": SOFTWARE_VERSION
                 }
-                publish_mqtt(mqtt_client, "sensors/plant", plant_data)
+                mqtt_publisher.publish("sensors/plant", plant_data)
                 with open("color_log.txt", "a") as f:
                     f.write(json.dumps(plant_data) + "\n")
-                trim_log_file("color_log.txt", 1000)
+                log_mgr.trim_log_file("color_log.txt", 1000)
                 last_run["color"] = now
             # --- Step 7: Trim stdout_log.txt ---
             # trim_stdout_log(1000)  # Disabled: handled by logrotate or external tool
@@ -416,8 +409,8 @@ def main():
     finally:
         GPIO.output(LED_PIN, GPIO.LOW)
         GPIO.cleanup()
-        mqtt_client.disconnect()
-        print("[INFO] GPIO cleaned up and MQTT disconnected.")
+        # No explicit disconnect needed; MqttPublisher handles cleanup
+        print("[INFO] GPIO cleaned up and MQTT publisher stopped.")
 
 if __name__ == "__main__":
     main()
