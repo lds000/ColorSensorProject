@@ -188,6 +188,20 @@ def log_5min_average(logfile, avg_value, label, sample_count):
     except Exception as e:
         log_error(f"Failed to write avg {label} log: {e}")
 
+def trim_color_log(max_lines):
+    """Trim color_log.txt to the last max_lines lines for log rotation and disk space safety."""
+    try:
+        log_file = "color_log.txt"
+        if not os.path.exists(log_file):
+            return
+        with open(log_file, "r") as f:
+            lines = f.readlines()
+        if len(lines) > max_lines:
+            with open(log_file, "w") as f:
+                f.writelines(lines[-max_lines:])
+    except Exception as e:
+        log_error(f"Failed to trim color_log.txt: {e}")
+
 # --- Main Loop with Scheduler ---
 def main():
     print(f"[DEBUG] Starting SensorMonitor main loop... (version {SOFTWARE_VERSION})")
