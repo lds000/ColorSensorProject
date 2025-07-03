@@ -142,18 +142,23 @@ def get_wind_reading(wind_sensor):
     if not ENABLE_WIND_SENSOR:
         return {"timestamp": datetime.now().isoformat(), "wind_speed": None, "wind_direction_deg": None, "wind_direction_compass": None}
     wind = wind_sensor.read()
-    speed = wind["wind_speed"]
-    deg = None
-    compass = None
+    # --- RESTORED: Wind direction reading from ADS1115 ---
     if ads is not None:
         try:
             wind_dir_chan = AnalogIn(ads, ADS.P1)
             wind_dir_raw = wind_dir_chan.value
-            deg = raw_to_degrees(wind_dir_raw)
-            compass = degrees_to_compass(deg)
+            wind_dir_deg = raw_to_degrees(wind_dir_raw)
+            wind_dir_compass = degrees_to_compass(wind_dir_deg)
+            wind["wind_direction_deg"] = wind_dir_deg
+            wind["wind_direction_compass"] = wind_dir_compass
         except Exception as e:
             log_error(f"Wind direction read error: {e}")
-    return {"timestamp": datetime.now().isoformat(), "wind_speed": speed, "wind_direction_deg": deg, "wind_direction_compass": compass}
+            wind["wind_direction_deg"] = None
+            wind["wind_direction_compass"] = None
+    else:
+        wind["wind_direction_deg"] = None
+        wind["wind_direction_compass"] = None
+    return {"timestamp": datetime.now().isoformat(), "wind_speed": wind["wind_speed"], "wind_direction_deg": wind["wind_direction_deg"], "wind_direction_compass": wind["wind_direction_compass"]}
 
 def get_dht22_reading(dht_device):
     """Read DHT22 if enabled. Returns dict with timestamp, temp, humidity. Retries up to 3 times if needed."""
@@ -309,8 +314,22 @@ def main():
                 dht = {"timestamp": datetime.now().isoformat(), "temperature": None, "humidity": None}
             if wind_sensor is not None:
                 wind = wind_sensor.read()
-                wind["wind_direction_deg"] = None
-                wind["wind_direction_compass"] = None
+                # --- RESTORED: Wind direction reading from ADS1115 ---
+                if ads is not None:
+                    try:
+                        wind_dir_chan = AnalogIn(ads, ADS.P1)
+                        wind_dir_raw = wind_dir_chan.value
+                        wind_dir_deg = raw_to_degrees(wind_dir_raw)
+                        wind_dir_compass = degrees_to_compass(wind_dir_deg)
+                        wind["wind_direction_deg"] = wind_dir_deg
+                        wind["wind_direction_compass"] = wind_dir_compass
+                    except Exception as e:
+                        log_error(f"Wind direction read error: {e}")
+                        wind["wind_direction_deg"] = None
+                        wind["wind_direction_compass"] = None
+                else:
+                    wind["wind_direction_deg"] = None
+                    wind["wind_direction_compass"] = None
             else:
                 wind = {"timestamp": datetime.now().isoformat(), "wind_speed": None, "wind_direction_deg": None, "wind_direction_compass": None}
             if pressure_sensor is not None:
@@ -354,6 +373,13 @@ def main():
                 readings_accum["wind"].append(wind["wind_speed"])
             if dht["temperature"] is not None:
                 readings_accum["temperature"].append(dht["temperature"])
+            if wind["wind_direction_deg"] is not None:
+                if "wind_direction" not in readings_accum:
+                    readings_accum["wind_direction"] = []
+                readings_accum["wind_direction"].append({
+                    "wind_direction_deg": wind["wind_direction_deg"],
+                    "wind_direction_compass": wind["wind_direction_compass"]
+                })
             # --- Step 4: Conditional avg_flow logging (dual-accumulator) ---
             avg_flow_5min = None
             avg_flow_5s = None
@@ -394,6 +420,17 @@ def main():
                     log_5min_average(AVG_TEMPERATURE_LOG_FILE, f"{avg_temp:.2f}", "avg_temp", len(readings_accum["temperature"]))
                     readings_accum["temperature"] = []
                 last_run["temperature_avg"] = now
+            # --- RESTORED: Wind direction 5-min average logging ---
+            if now - last_run["wind_direction_avg"] >= AVG_WIND_INTERVAL:
+                wind_dir_degs = [x["wind_direction_deg"] for x in readings_accum.get("wind_direction", []) if x["wind_direction_deg"] is not None]
+                wind_dir_compass = [x["wind_direction_compass"] for x in readings_accum.get("wind_direction", []) if x["wind_direction_compass"] is not None]
+                if wind_dir_degs:
+                    avg_deg = sum(wind_dir_degs) / len(wind_dir_degs)
+                    from collections import Counter
+                    compass = Counter(wind_dir_compass).most_common(1)[0][0] if wind_dir_compass else None
+                    log_5min_average(AVG_WIND_DIRECTION_LOG_FILE, f"{avg_deg:.2f},{compass}", "avg_wind_direction", len(wind_dir_degs))
+                readings_accum["wind_direction"] = []
+                last_run["wind_direction_avg"] = now
             # --- Step 6: Plant/color reporting every GROUP_INTERVAL minutes ---
             if ENABLE_COLOR_SENSOR and color_sensor is not None and now - last_run["color"] >= GROUP_INTERVAL * 60:
                 color_readings = color_sensor.read()
