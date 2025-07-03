@@ -99,15 +99,19 @@ def degrees_to_compass(degrees):
     idx = int((degrees + 22.5) // 45)
     return COMPASS_LABELS[idx]
 
-def calculate_flow_rate(litres, duration_minutes):
+def calculate_flow_rate(litres, duration_seconds):
     """
-    Calculate flow rate in litres per minute.
-    Returns 0.0 if litres is None or duration is zero.
+    Calculate the flow rate in liters per minute.
+    Args:
+        litres (float): The amount of water in liters measured during the duration.
+        duration_seconds (float): The duration in seconds over which the flow was measured.
+    Returns:
+        float: The flow rate in liters per minute.
     """
     try:
-        if litres is None or duration_minutes == 0:
+        if litres is None or duration_seconds == 0:
             return 0.0
-        return litres / duration_minutes
+        return (litres / duration_seconds) * 60
     except Exception as e:
         log_error(f"Flow rate calculation error: {e}")
         return 0.0
