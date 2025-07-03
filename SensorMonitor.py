@@ -216,6 +216,16 @@ def trim_stdout_log(max_lines):
     except Exception as e:
         log_error(f"Failed to trim stdout_log.txt: {e}")
 
+def log_error(message):
+    """Log critical errors with timestamp to error_log.txt and print to console."""
+    try:
+        ts = datetime.now().isoformat()
+        with open(ERROR_LOG_FILE, "a") as f:
+            f.write(f"[{ts}] ERROR: {message}\n")
+        print(f"[ERROR] {message}")
+    except Exception as e:
+        print(f"[FATAL] Could not write to error_log.txt: {e}")
+
 # --- Main Loop with Scheduler ---
 def main():
     print(f"[DEBUG] Starting SensorMonitor main loop... (version {SOFTWARE_VERSION})")
