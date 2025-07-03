@@ -1,0 +1,9 @@
+/home/lds00/ColorSensorTest/SensorMonitor.py:393: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()
+/home/lds00/ColorSensorTest/SensorMonitor.py:393: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()
+/home/lds00/ColorSensorTest/SensorMonitor.py:393: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()
+[2025-07-01T15:46:36.310442] DHT22: No valid reading this second after 3 attempts.
+/home/lds00/ColorSensorTest/SensorMonitor.py:393: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()

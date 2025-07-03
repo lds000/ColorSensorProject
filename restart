@@ -1,1 +1,2 @@
 sudo systemctl restart colorsensor.service
+sudo systemctl restart avg_pressure_api.service
