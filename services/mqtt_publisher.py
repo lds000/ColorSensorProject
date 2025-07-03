@@ -50,8 +50,10 @@ class MqttPublisher:
             self._connect()
 
     def _on_log(self, client, userdata, level, buf):
-        if level >= mqtt.MQTT_LOG_ERR:
+        # Only log errors and warnings to the error log
+        if level in (mqtt.MQTT_LOG_ERR, mqtt.MQTT_LOG_WARNING):
             self._log_error(f"MQTT log: {buf}")
+        # Optionally, handle info/debug elsewhere or ignore
 
     def _on_publish(self, client, userdata, mid):
         pass  # Could add debug logging here if needed
