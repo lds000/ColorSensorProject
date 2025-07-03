@@ -1,9 +1,337 @@
-/home/lds00/ColorSensorTest/SensorMonitor.py:393: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+Traceback (most recent call last):
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 392, in <module>
+    main()
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 252, in main
+    flow["flow_rate_lpm"] = calculate_flow_rate(flow["flow_litres"], 1.0)
+                            ^^^^^^^^^^^^^^^^^^^
+NameError: name 'calculate_flow_rate' is not defined
+/home/lds00/ColorSensorTest/SensorMonitor.py:229: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
   mqtt_client = mqtt.Client()
-/home/lds00/ColorSensorTest/SensorMonitor.py:393: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+Traceback (most recent call last):
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 392, in <module>
+    main()
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 252, in main
+    flow["flow_rate_lpm"] = calculate_flow_rate(flow["flow_litres"], 1.0)
+                            ^^^^^^^^^^^^^^^^^^^
+NameError: name 'calculate_flow_rate' is not defined
+/home/lds00/ColorSensorTest/SensorMonitor.py:229: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
   mqtt_client = mqtt.Client()
-/home/lds00/ColorSensorTest/SensorMonitor.py:393: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+/home/lds00/ColorSensorTest/SensorMonitor.py:229: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
   mqtt_client = mqtt.Client()
-[2025-07-01T15:46:36.310442] DHT22: No valid reading this second after 3 attempts.
-/home/lds00/ColorSensorTest/SensorMonitor.py:393: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+Traceback (most recent call last):
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 392, in <module>
+    main()
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 252, in main
+    flow["flow_rate_lpm"] = calculate_flow_rate(flow["flow_litres"], 1.0)
+                            ^^^^^^^^^^^^^^^^^^^
+NameError: name 'calculate_flow_rate' is not defined
+/home/lds00/ColorSensorTest/SensorMonitor.py:229: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()
+Traceback (most recent call last):
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 392, in <module>
+    main()
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 252, in main
+    flow["flow_rate_lpm"] = calculate_flow_rate(flow["flow_litres"], 1.0)
+                            ^^^^^^^^^^^^^^^^^^^
+NameError: name 'calculate_flow_rate' is not defined
+/home/lds00/ColorSensorTest/SensorMonitor.py:229: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()
+Traceback (most recent call last):
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 392, in <module>
+    main()
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 252, in main
+    flow["flow_rate_lpm"] = calculate_flow_rate(flow["flow_litres"], 1.0)
+                            ^^^^^^^^^^^^^^^^^^^
+NameError: name 'calculate_flow_rate' is not defined
+/home/lds00/ColorSensorTest/SensorMonitor.py:229: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()
+Traceback (most recent call last):
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 392, in <module>
+    main()
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 252, in main
+    flow["flow_rate_lpm"] = calculate_flow_rate(flow["flow_litres"], 1.0)
+                            ^^^^^^^^^^^^^^^^^^^
+NameError: name 'calculate_flow_rate' is not defined
+/home/lds00/ColorSensorTest/SensorMonitor.py:229: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()
+Traceback (most recent call last):
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 392, in <module>
+    main()
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 252, in main
+    flow["flow_rate_lpm"] = calculate_flow_rate(flow["flow_litres"], 1.0)
+                            ^^^^^^^^^^^^^^^^^^^
+NameError: name 'calculate_flow_rate' is not defined
+/home/lds00/ColorSensorTest/SensorMonitor.py:229: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()
+Traceback (most recent call last):
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 392, in <module>
+    main()
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 252, in main
+    flow["flow_rate_lpm"] = calculate_flow_rate(flow["flow_litres"], 1.0)
+                            ^^^^^^^^^^^^^^^^^^^
+NameError: name 'calculate_flow_rate' is not defined
+/home/lds00/ColorSensorTest/SensorMonitor.py:229: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()
+Traceback (most recent call last):
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 392, in <module>
+    main()
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 252, in main
+    flow["flow_rate_lpm"] = calculate_flow_rate(flow["flow_litres"], 1.0)
+                            ^^^^^^^^^^^^^^^^^^^
+NameError: name 'calculate_flow_rate' is not defined
+/home/lds00/ColorSensorTest/SensorMonitor.py:229: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()
+Traceback (most recent call last):
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 392, in <module>
+    main()
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 252, in main
+    flow["flow_rate_lpm"] = calculate_flow_rate(flow["flow_litres"], 1.0)
+                            ^^^^^^^^^^^^^^^^^^^
+NameError: name 'calculate_flow_rate' is not defined
+/home/lds00/ColorSensorTest/SensorMonitor.py:229: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()
+Traceback (most recent call last):
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 392, in <module>
+    main()
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 252, in main
+    flow["flow_rate_lpm"] = calculate_flow_rate(flow["flow_litres"], 1.0)
+                            ^^^^^^^^^^^^^^^^^^^
+NameError: name 'calculate_flow_rate' is not defined
+/home/lds00/ColorSensorTest/SensorMonitor.py:229: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()
+Traceback (most recent call last):
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 392, in <module>
+    main()
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 252, in main
+    flow["flow_rate_lpm"] = calculate_flow_rate(flow["flow_litres"], 1.0)
+                            ^^^^^^^^^^^^^^^^^^^
+NameError: name 'calculate_flow_rate' is not defined
+/home/lds00/ColorSensorTest/SensorMonitor.py:229: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()
+Traceback (most recent call last):
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 392, in <module>
+    main()
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 252, in main
+    flow["flow_rate_lpm"] = calculate_flow_rate(flow["flow_litres"], 1.0)
+                            ^^^^^^^^^^^^^^^^^^^
+NameError: name 'calculate_flow_rate' is not defined
+/home/lds00/ColorSensorTest/SensorMonitor.py:229: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()
+Traceback (most recent call last):
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 392, in <module>
+    main()
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 252, in main
+    flow["flow_rate_lpm"] = calculate_flow_rate(flow["flow_litres"], 1.0)
+                            ^^^^^^^^^^^^^^^^^^^
+NameError: name 'calculate_flow_rate' is not defined
+/home/lds00/ColorSensorTest/SensorMonitor.py:229: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()
+Traceback (most recent call last):
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 392, in <module>
+    main()
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 252, in main
+    flow["flow_rate_lpm"] = calculate_flow_rate(flow["flow_litres"], 1.0)
+                            ^^^^^^^^^^^^^^^^^^^
+NameError: name 'calculate_flow_rate' is not defined
+/home/lds00/ColorSensorTest/SensorMonitor.py:229: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()
+Traceback (most recent call last):
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 392, in <module>
+    main()
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 252, in main
+    flow["flow_rate_lpm"] = calculate_flow_rate(flow["flow_litres"], 1.0)
+                            ^^^^^^^^^^^^^^^^^^^
+NameError: name 'calculate_flow_rate' is not defined
+/home/lds00/ColorSensorTest/SensorMonitor.py:229: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()
+Traceback (most recent call last):
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 392, in <module>
+    main()
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 252, in main
+    flow["flow_rate_lpm"] = calculate_flow_rate(flow["flow_litres"], 1.0)
+                            ^^^^^^^^^^^^^^^^^^^
+NameError: name 'calculate_flow_rate' is not defined
+/home/lds00/ColorSensorTest/SensorMonitor.py:229: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()
+Traceback (most recent call last):
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 392, in <module>
+    main()
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 252, in main
+    flow["flow_rate_lpm"] = calculate_flow_rate(flow["flow_litres"], 1.0)
+                            ^^^^^^^^^^^^^^^^^^^
+NameError: name 'calculate_flow_rate' is not defined
+/home/lds00/ColorSensorTest/SensorMonitor.py:229: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()
+Traceback (most recent call last):
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 392, in <module>
+    main()
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 252, in main
+    flow["flow_rate_lpm"] = calculate_flow_rate(flow["flow_litres"], 1.0)
+                            ^^^^^^^^^^^^^^^^^^^
+NameError: name 'calculate_flow_rate' is not defined
+/home/lds00/ColorSensorTest/SensorMonitor.py:229: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()
+Traceback (most recent call last):
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 392, in <module>
+    main()
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 252, in main
+    flow["flow_rate_lpm"] = calculate_flow_rate(flow["flow_litres"], 1.0)
+                            ^^^^^^^^^^^^^^^^^^^
+NameError: name 'calculate_flow_rate' is not defined
+/home/lds00/ColorSensorTest/SensorMonitor.py:229: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()
+Traceback (most recent call last):
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 392, in <module>
+    main()
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 252, in main
+    flow["flow_rate_lpm"] = calculate_flow_rate(flow["flow_litres"], 1.0)
+                            ^^^^^^^^^^^^^^^^^^^
+NameError: name 'calculate_flow_rate' is not defined
+/home/lds00/ColorSensorTest/SensorMonitor.py:229: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()
+Traceback (most recent call last):
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 392, in <module>
+    main()
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 252, in main
+    flow["flow_rate_lpm"] = calculate_flow_rate(flow["flow_litres"], 1.0)
+                            ^^^^^^^^^^^^^^^^^^^
+NameError: name 'calculate_flow_rate' is not defined
+/home/lds00/ColorSensorTest/SensorMonitor.py:229: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()
+Traceback (most recent call last):
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 392, in <module>
+    main()
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 252, in main
+    flow["flow_rate_lpm"] = calculate_flow_rate(flow["flow_litres"], 1.0)
+                            ^^^^^^^^^^^^^^^^^^^
+NameError: name 'calculate_flow_rate' is not defined
+/home/lds00/ColorSensorTest/SensorMonitor.py:229: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()
+Traceback (most recent call last):
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 392, in <module>
+    main()
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 252, in main
+    flow["flow_rate_lpm"] = calculate_flow_rate(flow["flow_litres"], 1.0)
+                            ^^^^^^^^^^^^^^^^^^^
+NameError: name 'calculate_flow_rate' is not defined
+/home/lds00/ColorSensorTest/SensorMonitor.py:229: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()
+Traceback (most recent call last):
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 392, in <module>
+    main()
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 252, in main
+    flow["flow_rate_lpm"] = calculate_flow_rate(flow["flow_litres"], 1.0)
+                            ^^^^^^^^^^^^^^^^^^^
+NameError: name 'calculate_flow_rate' is not defined
+/home/lds00/ColorSensorTest/SensorMonitor.py:229: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()
+Traceback (most recent call last):
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 392, in <module>
+    main()
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 252, in main
+    flow["flow_rate_lpm"] = calculate_flow_rate(flow["flow_litres"], 1.0)
+                            ^^^^^^^^^^^^^^^^^^^
+NameError: name 'calculate_flow_rate' is not defined
+/home/lds00/ColorSensorTest/SensorMonitor.py:229: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()
+Traceback (most recent call last):
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 392, in <module>
+    main()
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 252, in main
+    flow["flow_rate_lpm"] = calculate_flow_rate(flow["flow_litres"], 1.0)
+                            ^^^^^^^^^^^^^^^^^^^
+NameError: name 'calculate_flow_rate' is not defined
+/home/lds00/ColorSensorTest/SensorMonitor.py:229: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()
+Traceback (most recent call last):
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 392, in <module>
+    main()
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 252, in main
+    flow["flow_rate_lpm"] = calculate_flow_rate(flow["flow_litres"], 1.0)
+                            ^^^^^^^^^^^^^^^^^^^
+NameError: name 'calculate_flow_rate' is not defined
+/home/lds00/ColorSensorTest/SensorMonitor.py:229: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()
+Traceback (most recent call last):
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 392, in <module>
+    main()
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 252, in main
+    flow["flow_rate_lpm"] = calculate_flow_rate(flow["flow_litres"], 1.0)
+                            ^^^^^^^^^^^^^^^^^^^
+NameError: name 'calculate_flow_rate' is not defined
+/home/lds00/ColorSensorTest/SensorMonitor.py:229: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()
+Traceback (most recent call last):
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 392, in <module>
+    main()
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 252, in main
+    flow["flow_rate_lpm"] = calculate_flow_rate(flow["flow_litres"], 1.0)
+                            ^^^^^^^^^^^^^^^^^^^
+NameError: name 'calculate_flow_rate' is not defined
+/home/lds00/ColorSensorTest/SensorMonitor.py:229: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()
+Traceback (most recent call last):
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 392, in <module>
+    main()
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 252, in main
+    flow["flow_rate_lpm"] = calculate_flow_rate(flow["flow_litres"], 1.0)
+                            ^^^^^^^^^^^^^^^^^^^
+NameError: name 'calculate_flow_rate' is not defined
+/home/lds00/ColorSensorTest/SensorMonitor.py:229: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()
+Traceback (most recent call last):
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 392, in <module>
+    main()
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 252, in main
+    flow["flow_rate_lpm"] = calculate_flow_rate(flow["flow_litres"], 1.0)
+                            ^^^^^^^^^^^^^^^^^^^
+NameError: name 'calculate_flow_rate' is not defined
+/home/lds00/ColorSensorTest/SensorMonitor.py:229: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()
+Traceback (most recent call last):
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 392, in <module>
+    main()
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 252, in main
+    flow["flow_rate_lpm"] = calculate_flow_rate(flow["flow_litres"], 1.0)
+                            ^^^^^^^^^^^^^^^^^^^
+NameError: name 'calculate_flow_rate' is not defined
+/home/lds00/ColorSensorTest/SensorMonitor.py:229: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()
+Traceback (most recent call last):
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 392, in <module>
+    main()
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 252, in main
+    flow["flow_rate_lpm"] = calculate_flow_rate(flow["flow_litres"], 1.0)
+                            ^^^^^^^^^^^^^^^^^^^
+NameError: name 'calculate_flow_rate' is not defined
+/home/lds00/ColorSensorTest/SensorMonitor.py:242: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()
+Traceback (most recent call last):
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 405, in <module>
+    main()
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 392, in main
+    trim_color_log(1000)
+    ^^^^^^^^^^^^^^
+NameError: name 'trim_color_log' is not defined
+/home/lds00/ColorSensorTest/SensorMonitor.py:242: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()
+Traceback (most recent call last):
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 405, in <module>
+    main()
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 392, in main
+    trim_color_log(1000)
+    ^^^^^^^^^^^^^^
+NameError: name 'trim_color_log' is not defined
+Lost access to message queue
+/home/lds00/ColorSensorTest/SensorMonitor.py:242: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
+  mqtt_client = mqtt.Client()
+Traceback (most recent call last):
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 405, in <module>
+    main()
+  File "/home/lds00/ColorSensorTest/SensorMonitor.py", line 392, in main
+    trim_color_log(1000)
+    ^^^^^^^^^^^^^^
+NameError: name 'trim_color_log' is not defined
+Lost access to message queue
+/home/lds00/ColorSensorTest/SensorMonitor.py:242: DeprecationWarning: Callback API version 1 is deprecated, update to latest version
   mqtt_client = mqtt.Client()
