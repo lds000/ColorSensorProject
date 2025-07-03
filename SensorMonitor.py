@@ -97,6 +97,19 @@ def degrees_to_compass(degrees):
     idx = int((degrees + 22.5) // 45)
     return COMPASS_LABELS[idx]
 
+def calculate_flow_rate(litres, duration_minutes):
+    """
+    Calculate flow rate in litres per minute.
+    Returns 0.0 if litres is None or duration is zero.
+    """
+    try:
+        if litres is None or duration_minutes == 0:
+            return 0.0
+        return litres / duration_minutes
+    except Exception as e:
+        log_error(f"Flow rate calculation error: {e}")
+        return 0.0
+
 # --- Modularized Sensor Reading Functions ---
 def get_flow_reading():
     """Read flow sensor if enabled. Returns dict with timestamp, pulses, litres, rate."""
