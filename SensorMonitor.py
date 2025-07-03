@@ -21,6 +21,7 @@ from sensors.pressure_sensor import PressureSensor
 from sensors.wind_direction_sensor import WindDirectionSensor
 from services.mqtt_publisher import MqttPublisher
 from services.log_manager import LogManager
+from logging_utils import calculate_flow_rate
 
 # --- CONFIG ---
 FLOW_SENSOR_PIN = 25  # BCM numbering
