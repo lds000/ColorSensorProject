@@ -40,6 +40,7 @@ AVG_TEMPERATURE_LOG_FILE = "avg_temperature_log.txt"
 AVG_TEMPERATURE_INTERVAL = 300  # 5 minutes in seconds
 AVG_FLOW_LOG_FILE = "avg_flow_log.txt"
 AVG_FLOW_INTERVAL = 300  # 5 minutes in seconds
+AVG_WIND_DIRECTION_LOG_FILE = "avg_wind_direction_log.txt"
 
 # --- LOAD CONFIG ---
 CONFIG_FILE = "config.json"
