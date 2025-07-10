@@ -22,6 +22,7 @@ from sensors.wind_direction_sensor import WindDirectionSensor
 from services.mqtt_publisher import MqttPublisher
 from services.log_manager import LogManager
 from logging_utils import calculate_flow_rate
+import glob
 
 # --- CONFIG ---
 FLOW_SENSOR_PIN = 25  # BCM numbering
@@ -100,6 +101,26 @@ def raw_to_degrees(raw):
 def degrees_to_compass(degrees):
     idx = int((degrees + 22.5) // 45)
     return COMPASS_LABELS[idx]
+
+def read_ds18b20_temp():
+    base_dir = "/sys/bus/w1/devices/"
+    try:
+        device_folders = glob.glob(base_dir + "28-*")
+        if not device_folders:
+            return None
+        device_file = os.path.join(device_folders[0], "w1_slave")
+        with open(device_file, "r") as f:
+            lines = f.readlines()
+        if lines[0].strip()[-3:] != 'YES':
+            return None
+        equals_pos = lines[1].find('t=')
+        if equals_pos == -1:
+            return None
+        temp_c = float(lines[1][equals_pos+2:]) / 1000.0
+        return temp_c
+    except Exception as e:
+        log_mgr.log_error(f"DS18B20 read error: {e}")
+        return None
 
 # --- Modularized Sensor Reading Functions ---
 def get_flow_reading():
@@ -232,6 +253,14 @@ def main():
     last_run = defaultdict(lambda: 0)
     readings_accum = defaultdict(list)
     last_flow_log_time = 0  # For 5s logging when flow > 0
+    plant_data = {
+        "sensor_name": SENSOR_NAME,
+        "timestamp": None,
+        "moisture": None,
+        "lux": None,
+        "soil_temperature": None,
+        "version": SOFTWARE_VERSION
+    }
     try:
         while True:
             now = time.time()
@@ -390,19 +419,18 @@ def main():
                         moisture_pct = None
                 else:
                     avg_lux, ts, moisture_pct = None, datetime.now().isoformat(), None
-                plant_data = {
-                    "sensor_name": SENSOR_NAME,
-                    "timestamp": ts,
-                    "moisture": moisture_pct,
-                    "lux": avg_lux,
-                    "soil_temperature": None,
-                    "version": SOFTWARE_VERSION
-                }
-                mqtt_publisher.publish("sensors/plant", plant_data)
+                plant_data["timestamp"] = ts
+                plant_data["moisture"] = moisture_pct
+                plant_data["lux"] = avg_lux
+                plant_data["soil_temperature"] = read_ds18b20_temp()
+                plant_data["version"] = SOFTWARE_VERSION
                 with open("color_log.txt", "a") as f:
                     f.write(json.dumps(plant_data) + "\n")
                 log_mgr.trim_log_file("color_log.txt", 1000)
                 last_run["color"] = now
+            # --- New: Publish sensors/plant every second ---
+            if plant_data["timestamp"] is not None:
+                mqtt_publisher.publish("sensors/plant", plant_data)
             # --- Step 7: Trim stdout_log.txt ---
             # trim_stdout_log(1000)  # Disabled: handled by logrotate or external tool
     except KeyboardInterrupt:
