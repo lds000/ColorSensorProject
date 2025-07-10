@@ -263,5 +263,40 @@ def get_recent_plant_data():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route("/soil-temperature-avg-latest", methods=["GET"])
+def get_recent_soil_temperature():
+    """
+    Returns the n most recent soil temperature readings from color_log.txt.
+    Query param: n (default 5)
+    Output: List of dicts with timestamp (ISO8601) and value (soil_temperature as float)
+    Only includes records where soil_temperature is not None.
+    """
+    n = request.args.get("n", default=5, type=int)
+    if n < 1 or n > 500:
+        return jsonify({"error": "n must be between 1 and 500"}), 400
+    if not os.path.exists(COLOR_LOG_FILE):
+        return jsonify([])
+    try:
+        with open(COLOR_LOG_FILE, "r") as f:
+            lines = f.readlines()
+        # Only keep JSON lines
+        data_lines = [line.strip() for line in lines if line.strip() and line.strip().startswith("{")]
+        results = []
+        for line in reversed(data_lines):
+            try:
+                obj = json.loads(line)
+                ts = obj.get("timestamp")
+                val = obj.get("soil_temperature")
+                if ts is not None and val is not None:
+                    results.append({"timestamp": ts, "value": float(val)})
+            except Exception:
+                continue
+            if len(results) >= n:
+                break
+        results.reverse()  # Return in chronological order
+        return jsonify(results)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001, debug=False)
