@@ -302,4 +302,5 @@ def get_recent_soil_temp_avg():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5001, debug=False)
+    # Enable debug mode for detailed error tracebacks
+    app.run(host="0.0.0.0", port=5001, debug=True)
