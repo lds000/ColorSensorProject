@@ -9,7 +9,7 @@ import os
 import platform
 import subprocess
 
-MQTT_BROKER = "localhost"  # Change to your broker IP if needed
+MQTT_BROKER = "100.116.147.6"  # Change to your broker IP if needed
 MQTT_PORT = 1883
 MQTT_TOPIC = "status/system"
 PUBLISH_INTERVAL = 10  # seconds
