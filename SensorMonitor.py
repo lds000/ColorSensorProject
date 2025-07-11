@@ -263,11 +263,7 @@ def main():
                 print("[DEBUG] Pressure sensor initialized.")
             # --- Wind direction sensor ---
             wind_direction_sensor = WindDirectionSensor(ads)
-    # --- Soil temperature accumulator for 5-min averaging ---
-    readings_accum["soil_temperature"] = []
-    last_run["soil_temperature_avg"] = 0
-    AVG_SOIL_TEMPERATURE_INTERVAL = 300  # 5 minutes
-    AVG_SOIL_TEMPERATURE_LOG_FILE = "avg_soil_temperature_log.txt"
+    # (Removed: already initialized at top of main())
             print("[DEBUG] Wind direction sensor initialized.")
         except Exception as e:
             log_mgr.log_error(f"ADS1115 init error: {e}")
