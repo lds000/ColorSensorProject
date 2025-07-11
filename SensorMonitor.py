@@ -201,6 +201,17 @@ def main():
     pressure_sensor = None
     ads = None
     wind_direction_sensor = None
+
+    # --- Scheduler state and accumulators (must be before any try block) ---
+    last_run = defaultdict(lambda: 0)
+    readings_accum = defaultdict(list)
+    last_flow_log_time = 0  # For 5s logging when flow > 0
+
+    # --- Soil temperature accumulator and interval setup ---
+    readings_accum["soil_temperature"] = []
+    last_run["soil_temperature_avg"] = 0
+    AVG_SOIL_TEMPERATURE_INTERVAL = 300  # 5 minutes
+    AVG_SOIL_TEMPERATURE_LOG_FILE = "avg_soil_temperature_log.txt"
     if ENABLE_FLOW_SENSOR:
         try:
             flow_sensor = FlowSensor(FLOW_SENSOR_PIN, FLOW_PULSES_PER_LITRE)
