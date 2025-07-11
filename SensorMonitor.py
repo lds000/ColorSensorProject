@@ -193,6 +193,18 @@ def log_5min_average(logfile, avg_value, label, sample_count):
 def main():
     print(f"[DEBUG] Starting SensorMonitor main loop... (version {SOFTWARE_VERSION})")
     log_mgr = LogManager(ERROR_LOG_FILE)
+
+    # --- Scheduler state and accumulators (must be before any try block) ---
+    last_run = defaultdict(lambda: 0)
+    readings_accum = defaultdict(list)
+    last_flow_log_time = 0  # For 5s logging when flow > 0
+
+    # --- Soil temperature accumulator and interval setup ---
+    readings_accum["soil_temperature"] = []
+    last_run["soil_temperature_avg"] = 0
+    AVG_SOIL_TEMPERATURE_INTERVAL = 300  # 5 minutes
+    AVG_SOIL_TEMPERATURE_LOG_FILE = "avg_soil_temperature_log.txt"
+
     # Sensor initialization
     flow_sensor = None
     color_sensor = None
