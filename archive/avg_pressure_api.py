@@ -8,8 +8,6 @@ AVG_FLOW_LOG_FILE = "avg_flow_log.txt"
 AVG_TEMPERATURE_LOG_FILE = "avg_temperature_log.txt"
 COLOR_LOG_FILE = "color_log.txt"
 
-AVG_SOIL_TEMPERATURE_LOG_FILE = "avg_soil_temperature_log.txt"
-
 app = Flask(__name__)
 
 @app.route("/pressure-avg-latest", methods=["GET"])
@@ -196,6 +194,8 @@ def get_recent_color_moisture():
 if __name__ == "__main__":
 
 # --- Soil temperature 5-min average endpoint ---
+AVG_SOIL_TEMPERATURE_LOG_FILE = "avg_soil_temperature_log.txt"
+
 @app.route("/soil-temperature-avg-latest", methods=["GET"])
 def get_recent_soil_temp_avg():
     """
@@ -230,4 +230,5 @@ def get_recent_soil_temp_avg():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+    # Endpoints below
     app.run(host="0.0.0.0", port=5001, debug=False)
