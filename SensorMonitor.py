@@ -277,6 +277,16 @@ def main():
     last_run = defaultdict(lambda: 0)
     readings_accum = defaultdict(list)
     last_flow_log_time = 0  # For 5s logging when flow > 0
+    plant_data = {
+        "sensor_name": SENSOR_NAME,
+        "timestamp": None,
+        "moisture": None,
+        "lux": None,
+        "soil_temperature": None,
+        "version": SOFTWARE_VERSION
+    }
+    try:
+        while True:
             # --- Step 1b: Poll DS18B20 soil temperature every second ---
             soil_temp = read_ds18b20_temp()
             # DS18B20 error code 85.0°C means invalid reading; filter and log
@@ -284,7 +294,10 @@ def main():
                 if abs(soil_temp - 85.0) < 0.01:
                     log_mgr.log_error("DS18B20 returned error code 85.0°C; ignoring reading.")
                     soil_temp = None
-            # --- Step 2: Publish/report per-second data ---
+            # --- Accumulate soil temperature for 5-min averaging ---
+            if soil_temp is not None:
+                readings_accum["soil_temperature"].append(soil_temp)
+            now = time.time()
     plant_data = {
         "sensor_name": SENSOR_NAME,
         "timestamp": None,
