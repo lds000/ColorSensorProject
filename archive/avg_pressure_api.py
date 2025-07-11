@@ -149,7 +149,7 @@ def get_recent_avg_flow():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route("/temperature-avg-latest", methods=["GET"])
+@app.route("/temperature-avg-latest2", methods=["GET"])
 def get_recent_avg_temperature():
     """
     Returns the n most recent average temperature readings from avg_temperature_log.txt.
