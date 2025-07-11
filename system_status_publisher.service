@@ -1,0 +1,15 @@
+[Unit]
+Description=Raspberry Pi System Status MQTT Publisher
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /home/lds00/ColorSensorTest/system_status_publisher.py
+Restart=always
+User=lds00
+WorkingDirectory=/home/lds00/ColorSensorTest
+StandardOutput=append:/home/lds00/ColorSensorTest/stdout_log.txt
+StandardError=append:/home/lds00/ColorSensorTest/error_log.txt
+
+[Install]
+WantedBy=multi-user.target
