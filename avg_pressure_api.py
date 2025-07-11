@@ -11,6 +11,7 @@ AVG_FLOW_LOG_FILE = "avg_flow_log.txt"
 AVG_TEMPERATURE_LOG_FILE = "avg_temperature_log.txt"
 COLOR_LOG_FILE = "color_log.txt"
 AVG_WIND_DIRECTION_LOG_FILE = "avg_wind_direction_log.txt"
+AVG_SOIL_TEMPERATURE_LOG_FILE = "avg_soil_temperature_log.txt"  # Added missing definition
 
 app = Flask(__name__)
 
