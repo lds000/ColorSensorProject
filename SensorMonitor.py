@@ -362,12 +362,20 @@ def main():
                     f.write(json.dumps(plant_data) + "\n")
                 log_mgr.trim_log_file("color_log.txt", 1000)
                 last_run["color"] = now
-                "flow_pulses": flow["flow_pulses"],
+
             # Update plant_data for live MQTT every second
             plant_data["timestamp"] = datetime.now().isoformat()
             plant_data["soil_temperature"] = soil_temp
             # moisture and lux only update every 5 min, so keep last value
             mqtt_publisher.publish("sensors/plant", plant_data)
+
+            # Prepare sets_data and environment_data dicts for MQTT
+            sets_data = {
+                "sensor_name": SENSOR_NAME,
+                "timestamp": flow["timestamp"],
+                "flow_pulses": flow["flow_pulses"],
+                "flow_litres": flow["flow_litres"],
+                "flow_rate_lpm": flow["flow_rate_lpm"],
                 "pressure_psi": pressure["pressure_psi"],
                 "pressure_kpa": pressure["pressure_kpa"],
                 "version": SOFTWARE_VERSION
