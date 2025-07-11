@@ -263,7 +263,7 @@ def get_recent_plant_data():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route("/soil-temperature-avg-latest", methods=["GET"])
+@app.route("/soil-temperature-avg-latest2", methods=["GET"])
 def get_recent_soil_temperature():
     """
     Returns the n most recent soil temperature readings from color_log.txt.
