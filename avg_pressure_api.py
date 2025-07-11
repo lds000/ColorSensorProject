@@ -280,8 +280,7 @@ def get_recent_soil_temp_avg():
             lines = f.readlines()
         lines = [line.strip() for line in lines if line.strip()][-n:]
         results = []
-        for line in lines:
-            # Example line: 2025-07-11T12:00:00.000000, avg_soil_temp=23.45, samples=12
+        for idx, line in enumerate(lines):
             try:
                 parts = line.split(",")
                 timestamp = parts[0].strip()
@@ -293,14 +292,13 @@ def get_recent_soil_temp_avg():
                     "samples": samples
                 })
             except Exception as ex:
-                # Log the error and the line that caused it
                 with open("error_log.txt", "a") as logf:
-                    logf.write(f"Error parsing line: {line}\nException: {str(ex)}\n")
+                    logf.write(f"Error parsing line {idx}/{len(lines)}: {line}\nException: {str(ex)}\n")
                 continue  # skip malformed lines
         return jsonify(results)
     except Exception as e:
         with open("error_log.txt", "a") as logf:
-            logf.write(f"Critical error in endpoint: {str(e)}\n")
+            logf.write(f"Critical error in endpoint: {str(e)}\nLines: {len(lines) if 'lines' in locals() else 'N/A'}\n")
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
