@@ -198,8 +198,6 @@ def main():
     last_run = defaultdict(lambda: 0)
     readings_accum = defaultdict(list)
     last_flow_log_time = 0  # For 5s logging when flow > 0
-
-    # --- Soil temperature accumulator and interval setup ---
     readings_accum["soil_temperature"] = []
     last_run["soil_temperature_avg"] = 0
     AVG_SOIL_TEMPERATURE_INTERVAL = 300  # 5 minutes
@@ -213,17 +211,6 @@ def main():
     pressure_sensor = None
     ads = None
     wind_direction_sensor = None
-
-    # --- Scheduler state and accumulators (must be before any try block) ---
-    last_run = defaultdict(lambda: 0)
-    readings_accum = defaultdict(list)
-    last_flow_log_time = 0  # For 5s logging when flow > 0
-
-    # --- Soil temperature accumulator and interval setup ---
-    readings_accum["soil_temperature"] = []
-    last_run["soil_temperature_avg"] = 0
-    AVG_SOIL_TEMPERATURE_INTERVAL = 300  # 5 minutes
-    AVG_SOIL_TEMPERATURE_LOG_FILE = "avg_soil_temperature_log.txt"
     if ENABLE_FLOW_SENSOR:
         try:
             flow_sensor = FlowSensor(FLOW_SENSOR_PIN, FLOW_PULSES_PER_LITRE)
@@ -298,20 +285,6 @@ def main():
             if soil_temp is not None:
                 readings_accum["soil_temperature"].append(soil_temp)
             now = time.time()
-    plant_data = {
-        "sensor_name": SENSOR_NAME,
-        "timestamp": None,
-        "moisture": None,
-        "lux": None,
-        "soil_temperature": None,
-        "version": SOFTWARE_VERSION
-    }
-    try:
-        while True:
-            # --- Accumulate soil temperature for 5-min averaging ---
-            if soil_temp is not None:
-                readings_accum["soil_temperature"].append(soil_temp)
-            now = time.time()
             # --- Step 1: Collect all sensor readings ---
             if flow_sensor is not None:
                 try:
@@ -321,6 +294,7 @@ def main():
                     log_mgr.log_error(f"Flow reading out of range: {e}")
                     flow = {"timestamp": datetime.now().isoformat(), "flow_pulses": None, "flow_litres": None, "flow_rate_lpm": None}
             else:
+                flow = {"timestamp": datetime.now().isoformat(), "flow_pulses": None, "flow_litres": None, "flow_rate_lpm": None}
             # --- Soil temperature 5-min average logging ---
             if now - last_run["soil_temperature_avg"] >= AVG_SOIL_TEMPERATURE_INTERVAL:
                 if readings_accum["soil_temperature"]:
@@ -328,7 +302,6 @@ def main():
                     log_5min_average(AVG_SOIL_TEMPERATURE_LOG_FILE, f"{avg_soil_temp:.2f}", "avg_soil_temp", len(readings_accum["soil_temperature"]))
                     readings_accum["soil_temperature"] = []
                 last_run["soil_temperature_avg"] = now
-                flow = {"timestamp": datetime.now().isoformat(), "flow_pulses": None, "flow_litres": None, "flow_rate_lpm": None}
             if pressure_sensor is not None:
                 try:
                     pressure = pressure_sensor.read()
@@ -352,16 +325,11 @@ def main():
             if dht22_sensor is not None:
                 try:
                     dht = dht22_sensor.read()
-                plant_data["timestamp"] = ts
-                plant_data["moisture"] = moisture_pct
-                plant_data["lux"] = avg_lux
-                # Soil temperature for 5-min log: use latest valid value
-                plant_data["soil_temperature"] = soil_temp
-                plant_data["version"] = SOFTWARE_VERSION
-                with open("color_log.txt", "a") as f:
-                    f.write(json.dumps(plant_data) + "\n")
-                log_mgr.trim_log_file("color_log.txt", 1000)
-                last_run["color"] = now
+                except Exception as e:
+                    log_mgr.log_error(f"DHT22: No valid reading this second after 3 attempts. {e}")
+                    dht = {"timestamp": datetime.now().isoformat(), "temperature": None, "humidity": None}
+            else:
+                dht = {"timestamp": datetime.now().isoformat(), "temperature": None, "humidity": None}
 
             # Update plant_data for live MQTT every second
             plant_data["timestamp"] = datetime.now().isoformat()
