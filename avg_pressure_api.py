@@ -297,6 +297,10 @@ def get_recent_soil_temp_avg():
                 continue  # skip malformed lines
         return jsonify(results)
     except Exception as e:
+        import traceback, sys
+        print("Critical error in /soil-temperature-avg-latest2 endpoint:", file=sys.stderr)
+        traceback.print_exc()
+        sys.stderr.flush()
         with open("error_log.txt", "a") as logf:
             logf.write(f"Critical error in endpoint: {str(e)}\nLines: {len(lines) if 'lines' in locals() else 'N/A'}\n")
         return jsonify({"error": str(e)}), 500
