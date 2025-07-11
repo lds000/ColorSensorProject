@@ -273,6 +273,7 @@ def main():
         "version": SOFTWARE_VERSION
     }
     try:
+        last_good_soil_temp = None
         while True:
             # --- Step 1b: Poll DS18B20 soil temperature every second ---
             soil_temp = read_ds18b20_temp()
@@ -281,6 +282,8 @@ def main():
                 if abs(soil_temp - 85.0) < 0.01:
                     log_mgr.log_error("DS18B20 returned error code 85.0°C; ignoring reading.")
                     soil_temp = None
+                else:
+                    last_good_soil_temp = soil_temp
             # --- Accumulate soil temperature for 5-min averaging ---
             if soil_temp is not None:
                 readings_accum["soil_temperature"].append(soil_temp)
@@ -333,7 +336,8 @@ def main():
 
             # Update plant_data for live MQTT every second
             plant_data["timestamp"] = datetime.now().isoformat()
-            plant_data["soil_temperature"] = soil_temp
+            # Use last known good soil temperature if current is None
+            plant_data["soil_temperature"] = soil_temp if soil_temp is not None else last_good_soil_temp
             # moisture and lux only update every 5 min, so keep last value
             mqtt_publisher.publish("sensors/plant", plant_data)
 
