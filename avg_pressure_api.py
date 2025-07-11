@@ -292,10 +292,15 @@ def get_recent_soil_temp_avg():
                     "avg_soil_temp": avg_soil_temp,
                     "samples": samples
                 })
-            except Exception:
+            except Exception as ex:
+                # Log the error and the line that caused it
+                with open("error_log.txt", "a") as logf:
+                    logf.write(f"Error parsing line: {line}\nException: {str(ex)}\n")
                 continue  # skip malformed lines
         return jsonify(results)
     except Exception as e:
+        with open("error_log.txt", "a") as logf:
+            logf.write(f"Critical error in endpoint: {str(e)}\n")
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
