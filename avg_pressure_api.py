@@ -264,36 +264,36 @@ def get_recent_plant_data():
         return jsonify({"error": str(e)}), 500
 
 @app.route("/soil-temperature-avg-latest2", methods=["GET"])
-def get_recent_soil_temperature():
+def get_recent_soil_temp_avg():
     """
-    Returns the n most recent soil temperature readings from color_log.txt.
+    Returns the n most recent 5-min average soil temperature readings from avg_soil_temperature_log.txt.
     Query param: n (default 5)
-    Output: List of dicts with timestamp (ISO8601) and value (soil_temperature as float)
-    Only includes records where soil_temperature is not None.
+    Output: List of dicts with timestamp, avg_soil_temp, samples
     """
     n = request.args.get("n", default=5, type=int)
     if n < 1 or n > 500:
         return jsonify({"error": "n must be between 1 and 500"}), 400
-    if not os.path.exists(COLOR_LOG_FILE):
+    if not os.path.exists(AVG_SOIL_TEMPERATURE_LOG_FILE):
         return jsonify([])
     try:
-        with open(COLOR_LOG_FILE, "r") as f:
+        with open(AVG_SOIL_TEMPERATURE_LOG_FILE, "r") as f:
             lines = f.readlines()
-        # Only keep JSON lines
-        data_lines = [line.strip() for line in lines if line.strip() and line.strip().startswith("{")]
+        lines = [line.strip() for line in lines if line.strip()][-n:]
         results = []
-        for line in reversed(data_lines):
+        for line in lines:
+            # Example line: 2025-07-11T12:00:00.000000, avg_soil_temp=23.45, samples=12
             try:
-                obj = json.loads(line)
-                ts = obj.get("timestamp")
-                val = obj.get("soil_temperature")
-                if ts is not None and val is not None:
-                    results.append({"timestamp": ts, "value": float(val)})
+                parts = line.split(",")
+                timestamp = parts[0].strip()
+                avg_soil_temp = float([p for p in parts if "avg_soil_temp=" in p][0].split("=")[1])
+                samples = int([p for p in parts if "samples=" in p][0].split("=")[1])
+                results.append({
+                    "timestamp": timestamp,
+                    "avg_soil_temp": avg_soil_temp,
+                    "samples": samples
+                })
             except Exception:
-                continue
-            if len(results) >= n:
-                break
-        results.reverse()  # Return in chronological order
+                continue  # skip malformed lines
         return jsonify(results)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
