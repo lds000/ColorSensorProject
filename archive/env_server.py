@@ -192,6 +192,55 @@ def environment_history_endpoint():
 # -----------------------------
 # Main entry point
 # -----------------------------
+
+# --- Soil temperature 5-min average endpoint ---
+import os
+SOIL_TEMP_AVG_LOG = "avg_soil_temperature_log.txt"
+ERROR_LOG_FILE = "error_log.txt"
+
+def log_error(msg):
+    try:
+        with open(ERROR_LOG_FILE, "a") as f:
+            f.write(f"[{datetime.now().isoformat()}] {msg}\n")
+    except Exception:
+        pass
+
+@app.route('/soil-temperature-avg-latest', methods=['GET'])
+def soil_temp_avg_latest():
+    """
+    Returns the latest 5-min average soil temperature from avg_soil_temperature_log.txt.
+    """
+    try:
+        if not os.path.exists(SOIL_TEMP_AVG_LOG):
+            log_error("avg_soil_temperature_log.txt not found.")
+            return jsonify({"error": "No data yet"}), 404
+        with open(SOIL_TEMP_AVG_LOG, "r") as f:
+            lines = f.readlines()
+        if not lines:
+            return jsonify({"error": "No data yet"}), 404
+        last = lines[-1].strip()
+        # Example line: 2025-07-11T12:00:00.000000, avg_soil_temp=23.45, samples=12
+        parts = last.split(',')
+        if len(parts) < 2:
+            log_error(f"Malformed line in avg_soil_temperature_log.txt: {last}")
+            return jsonify({"error": "Malformed data"}), 500
+        timestamp = parts[0].strip()
+        temp_part = [p for p in parts if "avg_soil_temp=" in p]
+        if not temp_part:
+            log_error(f"No avg_soil_temp in line: {last}")
+            return jsonify({"error": "Malformed data"}), 500
+        avg_temp = temp_part[0].split('=')[1].strip()
+        sample_part = [p for p in parts if "samples=" in p]
+        samples = sample_part[0].split('=')[1].strip() if sample_part else None
+        return jsonify({
+            "timestamp": timestamp,
+            "avg_soil_temp": float(avg_temp),
+            "samples": int(samples) if samples else None
+        })
+    except Exception as e:
+        log_error(f"Error in /soil-temperature-avg-latest: {e}")
+        return jsonify({"error": "Internal server error"}), 500
+
 if __name__ == '__main__':
     # Start the Flask server, listening on all network interfaces (0.0.0.0) at port 8000
     app.run(host='0.0.0.0', port=8000)
