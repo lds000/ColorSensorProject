@@ -10,9 +10,11 @@ import os
 import platform
 import subprocess
 
-# DS18B20 device IDs (randomly assigned, switch later if needed)
-DS18B20_ENV_ID = "28-000000523788"
-DS18B20_SOIL_ID = "28-00000053ca7e"
+
+# DS18B20 device IDs (update these if you swap sensors)
+DS18B20_ENV_ID = "28-000000523788"  # Environment sensor
+DS18B20_SOIL_ID = "28-00000053ca7e"  # Soil sensor
+
 
 def read_specific_ds18b20_temp(device_id):
     """
@@ -108,6 +110,7 @@ def get_temp_warnings(cpu_temp):
     return None
 
 
+
 def build_status_payload():
     cpu_temp = get_cpu_temp()
     mem = get_mem_info()
@@ -117,7 +120,7 @@ def build_status_payload():
     hostname = get_hostname()
     ip = get_ip()
     temp_warn = get_temp_warnings(cpu_temp)
-    # Read DS18B20 sensors
+    # Read DS18B20 sensors only
     env_temp = read_specific_ds18b20_temp(DS18B20_ENV_ID)
     soil_temp = read_specific_ds18b20_temp(DS18B20_SOIL_ID)
     if env_temp is None:
