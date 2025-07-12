@@ -18,15 +18,22 @@ def read_specific_ds18b20_temp(device_id):
     """
     Reads temperature from a specific DS18B20 sensor by device ID.
     Returns temperature in Celsius, or None on error.
+    Logs a warning if the sensor is missing or cannot be read.
     """
+    device_path = f"/sys/bus/w1/devices/{device_id}/w1_slave"
+    if not os.path.exists(device_path):
+        print(f"WARNING: DS18B20 sensor {device_id} not found (unplugged or not detected)")
+        return None
     try:
-        with open(f"/sys/bus/w1/devices/{device_id}/w1_slave", "r") as f:
+        with open(device_path, "r") as f:
             lines = f.readlines()
         if lines[0].strip()[-3:] != "YES":
+            print(f"WARNING: DS18B20 sensor {device_id} present but not returning valid data")
             return None
         temp_str = lines[1].split("t=")[-1]
         return float(temp_str) / 1000.0
-    except Exception:
+    except Exception as e:
+        print(f"ERROR reading DS18B20 sensor {device_id}: {e}")
         return None
 
 MQTT_BROKER = "100.116.147.6"  # Change to your broker IP if needed
@@ -113,6 +120,10 @@ def build_status_payload():
     # Read DS18B20 sensors
     env_temp = read_specific_ds18b20_temp(DS18B20_ENV_ID)
     soil_temp = read_specific_ds18b20_temp(DS18B20_SOIL_ID)
+    if env_temp is None:
+        print("System status: Environment sensor missing or unplugged.")
+    if soil_temp is None:
+        print("System status: Soil sensor missing or unplugged.")
     return {
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "hostname": hostname,
