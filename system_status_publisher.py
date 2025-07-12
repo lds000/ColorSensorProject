@@ -2,12 +2,32 @@
 System Status MQTT Publisher for Raspberry Pi Zero W
 Publishes system health info (CPU temp, RAM, disk, uptime, etc.) to MQTT topic 'status/system' every 10 seconds.
 """
+
 import time
 import json
 import paho.mqtt.client as mqtt
 import os
 import platform
 import subprocess
+
+# DS18B20 device IDs (randomly assigned, switch later if needed)
+DS18B20_ENV_ID = "28-000000523788"
+DS18B20_SOIL_ID = "28-00000053ca7e"
+
+def read_specific_ds18b20_temp(device_id):
+    """
+    Reads temperature from a specific DS18B20 sensor by device ID.
+    Returns temperature in Celsius, or None on error.
+    """
+    try:
+        with open(f"/sys/bus/w1/devices/{device_id}/w1_slave", "r") as f:
+            lines = f.readlines()
+        if lines[0].strip()[-3:] != "YES":
+            return None
+        temp_str = lines[1].split("t=")[-1]
+        return float(temp_str) / 1000.0
+    except Exception:
+        return None
 
 MQTT_BROKER = "100.116.147.6"  # Change to your broker IP if needed
 MQTT_PORT = 1883
@@ -80,6 +100,7 @@ def get_temp_warnings(cpu_temp):
         return "ELEVATED_TEMP"
     return None
 
+
 def build_status_payload():
     cpu_temp = get_cpu_temp()
     mem = get_mem_info()
@@ -89,12 +110,17 @@ def build_status_payload():
     hostname = get_hostname()
     ip = get_ip()
     temp_warn = get_temp_warnings(cpu_temp)
+    # Read DS18B20 sensors
+    env_temp = read_specific_ds18b20_temp(DS18B20_ENV_ID)
+    soil_temp = read_specific_ds18b20_temp(DS18B20_SOIL_ID)
     return {
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "hostname": hostname,
         "ip": ip,
         "cpu_temp_c": cpu_temp,
         "cpu_temp_warning": temp_warn,
+        "env_temp_c": env_temp,
+        "soil_temp_c": soil_temp,
         "mem": mem,
         "disk": disk,
         "uptime_sec": uptime,
