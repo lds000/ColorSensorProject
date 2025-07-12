@@ -1,3 +1,27 @@
+# DS18B20 device IDs (update these if you swap sensors)
+DS18B20_ENV_ID = "28-000000523788"  # Environment sensor
+DS18B20_SOIL_ID = "28-00000053ca7e"  # Soil sensor
+
+def read_specific_ds18b20_temp(device_id):
+    """
+    Reads temperature from a specific DS18B20 sensor by device ID.
+    Returns temperature in Celsius, or None on error.
+    """
+    device_path = f"/sys/bus/w1/devices/{device_id}/w1_slave"
+    if not os.path.exists(device_path):
+        print(f"WARNING: DS18B20 sensor {device_id} not found (unplugged or not detected)")
+        return None
+    try:
+        with open(device_path, "r") as f:
+            lines = f.readlines()
+        if lines[0].strip()[-3:] != "YES":
+            print(f"WARNING: DS18B20 sensor {device_id} present but not returning valid data")
+            return None
+        temp_str = lines[1].split("t=")[-1]
+        return float(temp_str) / 1000.0
+    except Exception as e:
+        print(f"ERROR reading DS18B20 sensor {device_id}: {e}")
+        return None
 import RPi.GPIO as GPIO
 import time
 from board import D22, D27, D4
@@ -275,18 +299,26 @@ def main():
     try:
         last_good_soil_temp = None
         while True:
-            # --- Step 1b: Poll DS18B20 soil temperature every second ---
-            soil_temp = read_ds18b20_temp()
+            # --- Step 1b: Poll DS18B20 soil and environment temperature every second ---
+            soil_temp = read_specific_ds18b20_temp(DS18B20_SOIL_ID)
+            env_temp = read_specific_ds18b20_temp(DS18B20_ENV_ID)
             # DS18B20 error code 85.0°C means invalid reading; filter and log
             if soil_temp is not None:
                 if abs(soil_temp - 85.0) < 0.01:
-                    log_mgr.log_error("DS18B20 returned error code 85.0°C; ignoring reading.")
+                    log_mgr.log_error("DS18B20 (soil) returned error code 85.0°C; ignoring reading.")
                     soil_temp = None
                 else:
                     last_good_soil_temp = soil_temp
+            if env_temp is not None:
+                if abs(env_temp - 85.0) < 0.01:
+                    log_mgr.log_error("DS18B20 (env) returned error code 85.0°C; ignoring reading.")
+                    env_temp = None
             # --- Accumulate soil temperature for 5-min averaging ---
             if soil_temp is not None:
                 readings_accum["soil_temperature"].append(soil_temp)
+            # --- Accumulate environment temperature for 5-min averaging ---
+            if env_temp is not None:
+                readings_accum["temperature"].append(env_temp)
             now = time.time()
             # --- Step 1: Collect all sensor readings ---
             if flow_sensor is not None:
@@ -351,7 +383,7 @@ def main():
             environment_data = {
                 "sensor_name": SENSOR_NAME,
                 "timestamp": env_timestamp,
-                "temperature": ds18b20_temp,
+                "temperature": env_temp,
                 "wind_speed": wind["wind_speed"],
                 "wind_direction_deg": wind["wind_direction_deg"],
                 "wind_direction_compass": wind["wind_direction_compass"],
