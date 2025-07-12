@@ -325,14 +325,9 @@ def main():
             else:
                 wind["wind_direction_deg"] = None
                 wind["wind_direction_compass"] = None
-            if dht22_sensor is not None:
-                try:
-                    dht = dht22_sensor.read()
-                except Exception as e:
-                    log_mgr.log_error(f"DHT22: No valid reading this second after 3 attempts. {e}")
-                    dht = {"timestamp": datetime.now().isoformat(), "temperature": None, "humidity": None}
-            else:
-                dht = {"timestamp": datetime.now().isoformat(), "temperature": None, "humidity": None}
+            # Read DS18B20 temperature for environment
+            ds18b20_temp = read_ds18b20_temp()
+            env_timestamp = datetime.now().isoformat()
 
             # Update plant_data for live MQTT every second
             plant_data["timestamp"] = datetime.now().isoformat()
@@ -355,9 +350,8 @@ def main():
             mqtt_publisher.publish("sensors/sets", sets_data)
             environment_data = {
                 "sensor_name": SENSOR_NAME,
-                "timestamp": dht["timestamp"],
-                "temperature": dht["temperature"],
-                "humidity": dht["humidity"],
+                "timestamp": env_timestamp,
+                "temperature": ds18b20_temp,
                 "wind_speed": wind["wind_speed"],
                 "wind_direction_deg": wind["wind_direction_deg"],
                 "wind_direction_compass": wind["wind_direction_compass"],
